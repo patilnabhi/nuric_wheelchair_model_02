@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<arg name="model" default="$(find new_wheelchair)/urdf/wheelchair.urdf.xacro" />
+	<param command="$(find xacro)/xacro.py $(arg model)" name="robot_description"/>
+
+	<!-- <arg name="rvizconfig" default="$(find new_wheelchair)/config/wheelchair_urdf.rviz" /> -->
+
+	<!-- push robot_description to factory and spawn robot in gazebo -->
+    <node name="spawn_robot" pkg="gazebo_ros" type="spawn_model"
+          args="-param robot_description
+                -unpause
+                -urdf
+                -model robot_description"
+          respawn="false" output="screen" />
+
+	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+	<!-- start robot state publisher -->
+    <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen" >
+        <param name="publish_frequency" type="double" value="50.0" />
+        <param name="tf_prefix" type="string" value="" />
+    </node>
+
+	<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" /> -->
+
+</launch>

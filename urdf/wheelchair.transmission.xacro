@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<robot xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+       xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+       xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+       xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--  Front wheel transmission   -->
+  <xacro:macro name="front_wheel_transmission" params="suffix parent reflect">
+    <transmission type="pr2_mechanism_model/SimpleTransmission" name="${suffix}_front_wheel_trans">
+      <actuator name="${suffix}_front_wheel_motor" />
+      <joint name="${parent}_${suffix}_front_wheel_joint" />
+      <mechanicalReduction>${reflect*1.0}</mechanicalReduction>
+    </transmission>
+  </xacro:macro>
+
+</robot>
