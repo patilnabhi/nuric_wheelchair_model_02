@@ -2,10 +2,10 @@
 
 <launch>
 
-	<arg name="model" default="$(find new_wheelchair)/urdf/wheelchair.urdf.xacro" />
+	<arg name="model" default="$(find nuric_wheelchair_model_02)/urdf/wheelchair.urdf.xacro" />
 	<param command="$(find xacro)/xacro.py $(arg model)" name="robot_description"/>
 
-	<!-- <arg name="rvizconfig" default="$(find new_wheelchair)/config/wheelchair_urdf.rviz" /> -->
+	<!-- <arg name="rvizconfig" default="$(find nuric_wheelchair_model_02)/config/wheelchair_urdf.rviz" /> -->
 
 	<!-- push robot_description to factory and spawn robot in gazebo -->
     <node name="spawn_robot" pkg="gazebo_ros" type="spawn_model"

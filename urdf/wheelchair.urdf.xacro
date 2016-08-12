@@ -6,7 +6,7 @@
        xmlns:xacro="http://www.ros.org/wiki/xacro"
        name="wheelchair" >
 
-  <xacro:include filename="$(find new_wheelchair)/urdf/base.urdf.xacro" />
+  <xacro:include filename="$(find nuric_wheelchair_model_02)/urdf/base.urdf.xacro" />
 
   <xacro:wheelchair_base />
 
