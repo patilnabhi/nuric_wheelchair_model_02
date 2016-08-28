@@ -7,10 +7,14 @@
 
   <!--  Front wheel transmission   -->
   <xacro:macro name="front_wheel_transmission" params="suffix parent reflect">
-    <transmission type="pr2_mechanism_model/SimpleTransmission" name="${suffix}_front_wheel_trans">
-      <actuator name="${suffix}_front_wheel_motor" />
-      <joint name="${parent}_${suffix}_front_wheel_joint" />
-      <mechanicalReduction>${reflect*1.0}</mechanicalReduction>
+    <transmission name="${suffix}_front_wheel_trans">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="${parent}_${suffix}_front_wheel_joint" >
+        <hardwareInterface>EffortJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="${suffix}_front_wheel_motor" >
+        <mechanicalReduction>${reflect*1.0}</mechanicalReduction>
+      </actuator>
     </transmission>
   </xacro:macro>
 

@@ -66,10 +66,10 @@
 
   </xacro:macro>
 
- 
+
   <!-- Macro for caster wheel only -->
   <xacro:macro name="caster_wheel" params="suffix parent reflect" >
-    
+
     <joint name="${parent}_${suffix}_caster_wheel_joint" type="continuous" >
       <axis xyz="0 1 0" />
 
@@ -105,7 +105,7 @@
 
   <!-- Macro for caster hub only -->
   <xacro:macro name="caster_hub" params="suffix parent *origin reflect" >
-    
+
     <joint name="${parent}_${suffix}_caster_hub_joint" type="continuous" >
       <axis xyz="0 0 1" />
       <!-- <limit lower="${PI}" upper="${-1*PI}" effort="0.0" velocity="0.0" /> -->
@@ -118,7 +118,7 @@
     <link name="${suffix}_caster_hub_link" value="${suffix}" >
 
         <xacro:caster_hub_inertia lr="${reflect}"/>
-      
+
       <visual>
         <geometry>
           <mesh filename="package://nuric_wheelchair_model_02/meshes/caster_hub_${suffix}.dae" />
@@ -140,7 +140,7 @@
 
   <!-- Macro for caster set (caster wheel & hub) -->
   <xacro:macro name="caster_set" params="suffix parent *origin reflect" >
-    
+
     <xacro:caster_hub suffix="${suffix}" parent="${parent}" reflect="${reflect}">
       <insert_block name="origin" />
     </xacro:caster_hub>
@@ -152,7 +152,7 @@
 
   <!-- Macro for wheelchair_base (includes front & caster wheels and wheelchair body) -->
   <xacro:macro name="wheelchair_base" >
-    
+
     <link name="base_footprint" >
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -187,20 +187,20 @@
     <xacro:front_wheel suffix="right" parent="base" reflect="-1" />
 
     <xacro:caster_set suffix="left" parent="base" reflect="1" >
-      <origin xyz="${caster_hub_base_x} ${caster_hub_base_y} ${caster_hub_base_z}" 
+      <origin xyz="${caster_hub_base_x} ${caster_hub_base_y} ${caster_hub_base_z}"
               rpy="0 0 0" />
     </xacro:caster_set>
     <xacro:caster_set suffix="right" parent="base" reflect="-1" >
-      <origin xyz="${caster_hub_base_x} ${-caster_hub_base_y} ${caster_hub_base_z}" 
+      <origin xyz="${caster_hub_base_x} ${-caster_hub_base_y} ${caster_hub_base_z}"
               rpy="0 0 ${PI}" />
     </xacro:caster_set>
-    
+
 
     <xacro:wheelchair_base_gazebo diameter="${2*front_wheel_radius}" separation="${2*front_wheel_base_y}" />
 
   </xacro:macro>
 
-  
+
 
 
 <!-- =============================================================================== -->
@@ -226,7 +226,7 @@
           <mesh filename="package://nuric_wheelchair_model_02/meshes/wheel.dae" />
         </geometry>
       </visual>
-      
+
     </link>
 
   </xacro:macro> -->
@@ -259,7 +259,7 @@
       </visual>
     </link>
 
-    
+
 
     <xacro:f_wheel >
     </xacro:f_wheel>
