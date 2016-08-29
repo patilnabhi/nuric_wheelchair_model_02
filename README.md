@@ -1,1 +1,1 @@
-## Smart Wheelchair Model with teleop (Project in development)
+## Smart Wheelchair - Estimator for Caster Wheel Orientation (Project in development)
