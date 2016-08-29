@@ -3,7 +3,6 @@ import rospy
 import sys
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
-from gazebo_msgs.msg import LinkStates
 
 class JoyTeleop:
 
@@ -12,7 +11,6 @@ class JoyTeleop:
 		self.joy_cmd = Twist()
 		#Setup subscriber
 		self.joy = rospy.Subscriber('joy', Joy, self.joy_callback)
-		# self.joints_states = rospy.Subscriber('joints_states', LinkStates, self.joints_states_callback)
 
 		# Setup publisher
 		self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=20)
