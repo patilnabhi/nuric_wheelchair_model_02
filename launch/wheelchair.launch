@@ -12,6 +12,10 @@
 
     <include file="$(find nuric_wheelchair_model_02)/launch/wheelchair_base.launch" />
 
+	<!-- joy node -->
+  	<!-- <node respawn="true" pkg="joy" type="joy_node" name="wheelchair_joy" /> -->
 
+	<!-- get_caster_joints node -->
+	<node respawn="true" pkg="nuric_wheelchair_model_02" type="get_caster_joints.py" name="get_caster_joints" />
 
 </launch>

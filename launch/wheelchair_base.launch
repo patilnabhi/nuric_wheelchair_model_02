@@ -16,13 +16,12 @@
           respawn="false" output="screen" />
 
 	<!-- start robot state publisher -->
-  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" respawn="false" output="screen" />
+  	<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" respawn="false" output="screen" />
 
 
 	<param name="use_gui" value="false"/>
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
-	<!-- joy node -->
-  <node respawn="true" pkg="joy" type="joy_node" name="wheelchair_joy" />
+
 
 </launch>
