@@ -22,7 +22,7 @@ class GetCasterJoints:
         # Setup publisher
         self.pub_caster_joints = rospy.Publisher('/caster_joints', FloatArray, queue_size=20)
 
-        r = rospy.Rate(20)
+        r = rospy.Rate(100)
         while not rospy.is_shutdown():
             self.pub()
             r.sleep()

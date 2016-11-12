@@ -2,7 +2,7 @@
 import rospy
 import sys
 from nuric_wheelchair_model_02.msg import FloatArray
-from std_msgs.msg import Float32
+from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 import random
 import matplotlib.pyplot as plt
@@ -18,14 +18,18 @@ class PlotCasterJoints:
         # Set rospy to execute a shutdown function when exiting       
         rospy.on_shutdown(self.shutdown)
 
-        self.l_caster_angle = Float32()
-        self.r_caster_angle = Float32()
+        self.l_caster_angle = Float64()
+        self.r_caster_angle = Float64()
         self.wheel_cmd = Twist()
+
+        self.pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348
 
         # time to move wheelchair 
         self.move_time = 3.0
 
         self.rate = 100
+
+        self.save = 0
 
         self.l_caster_data = []
         self.r_caster_data = []
@@ -54,8 +58,12 @@ class PlotCasterJoints:
 
         
     def caster_joints_callback(self, caster_joints):
-        self.l_caster_angle, self.r_caster_angle = caster_joints.data[0], caster_joints.data[1]
-        
+        if self.save:
+            self.l_caster_data.append(caster_joints.data[0])
+            self.r_caster_data.append(caster_joints.data[1])
+        else:
+            self.l_caster_angle = caster_joints.data[0]
+            self.r_caster_angle = caster_joints.data[1]
 
     def initialize(self):
         rospy.loginfo("Initializing...")        
@@ -72,13 +80,15 @@ class PlotCasterJoints:
 
         rospy.loginfo("Moving robot...")
         while (rospy.get_time() - start < self.move_time) and not rospy.is_shutdown():
-            self.save_data()
+            self.save = 1
             self.pub_twist.publish(self.wheel_cmd)        
-            self.r.sleep()
+            # self.r.sleep()
 
         # Stop the robot
         self.pub_twist.publish(Twist())
+        self.save = 0
         self.print_caster_joints()
+        
         rospy.sleep(1)
         
 
@@ -91,7 +101,7 @@ class PlotCasterJoints:
         plt.subplot(211)
         plt.title("Left caster orientations")
         plt.plot(self.l_caster_data, label="sim")
-        self.ode_int(self.l_caster_data)
+        self.ode_int(0)
         plt.plot(self.sol, label="est")
         plt.legend()
 
@@ -105,7 +115,7 @@ class PlotCasterJoints:
         plt.subplot(212)
         plt.title("Right caster orientations")
         plt.plot(self.r_caster_data, label="sim")
-        self.ode_int(self.r_caster_data)
+        self.ode_int(1)
         plt.plot(self.sol, label="est")
 
         # plt.subplot(414)
@@ -117,23 +127,46 @@ class PlotCasterJoints:
 
         plt.show()
 
-    def solvr(self, Y, t):
+    def solvr_left(self, Y, t):
         th = self.wheel_cmd.angular.z
-        x = -self.wheel_cmd.linear.x
+        x = self.wheel_cmd.linear.x
         dl = self.wh_consts[0]
         df = self.wh_consts[1]
         dc = self.wh_consts[2]
-        return [(th*(dl*cos(Y[0]) + (df*sin(Y[0])/2) - dc)/dc) - (x*sin(Y[0])/dc)]
+        return [(th*(dl*cos(Y[0]) + (df*sin(Y[0])/2) - dc)/dc) + (x*sin(Y[0])/dc)]
+
+    def solvr_right(self, Y, t):
+        th = self.wheel_cmd.angular.z
+        x = self.wheel_cmd.linear.x
+        dl = self.wh_consts[0]
+        df = self.wh_consts[1]
+        dc = self.wh_consts[2]
+        return [(th*(dl*cos(Y[0]) - (df*sin(Y[0])/2) - dc)/dc) + (x*sin(Y[0])/dc)]
 
     def ode_int(self, lr):
         a_t = np.arange(0.0, self.move_time, 1./self.rate)
-        ini_val = self.angle_adj(lr[0]+3.14)
-        asol = odeint(self.solvr, [ini_val], a_t)
-        self.sol = [(self.angle_adj(item+3.14)) for sublist in asol.tolist() for item in sublist]
+        if lr == 0:
+            ini_val = self.angle_adj(self.l_caster_data[0]+self.pi)
+            # if abs(ini_val) < 0.0005:
+            #     ini_val = 0.0
+            print ini_val
+            asol = odeint(self.solvr_left, [ini_val], a_t)
+            # self.sol = [(self.angle_adj(item+self.pi)) for sublist in asol.tolist() for item in sublist]
+            self.sol = [self.angle_adj((item+self.pi)%(2.*self.pi)) for sublist in asol.tolist() for item in sublist]
+        elif lr == 1:
+            ini_val = self.angle_adj(self.r_caster_data[0]+self.pi)
+            # if abs(ini_val) < 0.0005:
+            #     ini_val = 0.0
+            print ini_val
+            asol = odeint(self.solvr_right, [ini_val], a_t)
+            # self.sol = [(self.angle_adj(item+self.pi)) for sublist in asol.tolist() for item in sublist]
+            self.sol = [self.angle_adj((item+self.pi)%(2.*self.pi)) for sublist in asol.tolist() for item in sublist]
 
 
     def angle_adj(self, angle):
-        return atan2(sin(angle), cos(angle))
+        if angle > self.pi:
+            return -(2.*self.pi - angle)
+        return angle
 
     def print_caster_joints(self):
         print 'Left caster: {:.3f} rad'.format(self.l_caster_angle)
