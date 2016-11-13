@@ -19,8 +19,8 @@ class SolveDynamicModel:
         rospy.on_shutdown(self.shutdown)
         self.wheel_cmd = Twist()
 
-        self.wheel_cmd.linear.x = -0.3
-        self.wheel_cmd.angular.z = -0.3
+        self.wheel_cmd.linear.x = 0.3
+        self.wheel_cmd.angular.z = 0.2
 
         self.move_time = 4.0
         self.rate = 100
@@ -33,9 +33,14 @@ class SolveDynamicModel:
         self.soly = []
         self.solth = []
 
+        self.errorx = []
+        self.errory = []
+        self.errorth = []
+
+
         # constants for ode equations
         # (approximations)
-        self.Iz = 5.0
+        self.Iz = 15.0
         self.mu = .01
         self.ep = 0.5
         self.m = 5.0
@@ -58,6 +63,12 @@ class SolveDynamicModel:
         self.move_wheelchair()
 
         self.plot_data()
+
+        # print len(self.pose_x_data)
+        # xaxis = [x/400. for x in xrange(400)]
+
+
+        
 
 
     def actual_pose_callback(self, actual_pose):
@@ -102,7 +113,6 @@ class SolveDynamicModel:
         while (rospy.get_time() - start < self.move_time) and not rospy.is_shutdown():
             self.save = 1
             self.pub_twist.publish(self.wheel_cmd)        
-            # self.r.sleep()
 
         # Stop the robot
         self.pub_twist.publish(Twist())
@@ -138,6 +148,9 @@ class SolveDynamicModel:
         delta2 = self.pi - self.l_caster_angle
         delta1 = self.pi - self.r_caster_angle
 
+        # delta2 = 0.0
+        # delta1 = 0.0      
+
 
         omega1 = (F3u*cos(delta1)) + (F3w*sin(delta1)) + F1u + F2u + (F4u*cos(delta2)) + (F4w*sin(delta2))
         omega2 = F1w - (F3u*sin(delta1)) + (F3w*cos(delta1)) - (F4u*sin(delta2)) + (F4w*cos(delta2)) + F2w
@@ -157,35 +170,66 @@ class SolveDynamicModel:
     def ode_int(self):
 
         a_t = np.arange(0.0, self.move_time, 1./self.rate)
-        # ini_val = [self.wheel_cmd.angular.z, self.wheel_cmd.linear.x, 0.0, self.pose_x, self.pose_y, self.pose_z]
         ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.pose_y, self.pose_x, self.pose_th]
 
         asol = odeint(self.solvr, ini_val, a_t)
         # self.sol = [item for sublist in asol.tolist() for item in sublist]  
-        print len(asol)
+        
         for i in xrange(int(self.move_time*self.rate)):
             self.solx.append(asol[i][3])
             self.soly.append(-asol[i][2])
             self.solth.append(asol[i][4])
         
         # print self.solx      
+    
+    def calc_error(self):
+        for i in xrange(len(self.solx)-10):
+            self.errorx.append(self.solx[i]-self.pose_x_data[i])
+            self.errory.append(self.soly[i]-self.pose_y_data[i])
+            self.errorth.append(self.solth[i]-self.pose_th_data[i])
 
 
     def plot_data(self):
         self.ode_int()
+        self.calc_error()
         plt.figure(1)
-        plt.title("Estimated pose of robot")
-        plt.plot(self.solx, label="x")
-        plt.plot(self.soly, label="y")
-        plt.plot(self.solth, label="th")
+        plt.subplot(311)
+        plt.title("Estimated pose of robot (m)")
+        xaxis = [x/100. for x in xrange(int(len(self.solx)))]
+        plt.plot(xaxis, self.solx, label="x")
+        plt.plot(xaxis, self.soly, label="y")        
+        plt.legend()
+
+        plt.subplot(312)
+        plt.title("Actual pose of robot (m)")
+        xaxis2 = [x/100. for x in xrange(int(len(self.pose_x_data)))]
+        plt.plot(xaxis2, self.pose_x_data, label="x")
+        plt.plot(xaxis2, self.pose_y_data, label="y")
+        plt.legend()
+
+        plt.subplot(313)
+        plt.title("Error in pose of robot (m)")
+        xaxis3 = [x/100. for x in xrange(int(len(self.errorx)))]
+        plt.plot(xaxis3, self.errorx, label="x")
+        plt.plot(xaxis3, self.errory, label="y")
         plt.legend()
 
         plt.figure(2)
-        plt.title("Actual pose of robot")
-        plt.plot(self.pose_x_data, label="x")
-        plt.plot(self.pose_y_data, label="y")
-        plt.plot(self.pose_th_data, label="th")
+        plt.subplot(311)
+        plt.title("Estimated orientation of robot (rad)")
+        plt.plot(xaxis, self.solth, label="theta")
         plt.legend()
+
+        plt.subplot(312)
+        plt.title("Actual orientation of robot (rad)")
+        plt.plot(xaxis2, self.pose_th_data, label="theta")
+        plt.legend()
+
+        plt.subplot(313)
+        plt.title("Error in orientation of robot (rad)")
+        plt.plot(xaxis3, self.errorth, label="theta")
+        plt.legend()
+
 
         plt.show()
 

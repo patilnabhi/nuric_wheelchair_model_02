@@ -25,7 +25,7 @@ class PlotCasterJoints:
         self.pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348
 
         # time to move wheelchair 
-        self.move_time = 3.0
+        self.move_time = 4.0
 
         self.rate = 100
 
@@ -51,8 +51,10 @@ class PlotCasterJoints:
         # Move wheelchair
         self.move_wheelchair()
 
+        print len(self.l_caster_data)
+
         # Plot caster joints data
-        self.plot_data()
+        # self.plot_data()
 
         
 
@@ -101,6 +103,7 @@ class PlotCasterJoints:
         plt.subplot(211)
         plt.title("Left caster orientations")
         plt.plot(self.l_caster_data, label="sim")
+
         self.ode_int(0)
         plt.plot(self.sol, label="est")
         plt.legend()
