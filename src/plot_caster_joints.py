@@ -51,10 +51,10 @@ class PlotCasterJoints:
         # Move wheelchair
         self.move_wheelchair()
 
-        print len(self.l_caster_data)
+        # print len(self.l_caster_data)
 
         # Plot caster joints data
-        # self.plot_data()
+        self.plot_data()
 
         
 
