@@ -20,9 +20,9 @@ class SolveDynamicModel:
         self.wheel_cmd = Twist()
 
         self.wheel_cmd.linear.x = 0.3
-        self.wheel_cmd.angular.z = 0.2
+        self.wheel_cmd.angular.z = 0.0
 
-        self.move_time = 4.0
+        self.move_time = 10.0
         self.rate = 100
 
         self.pose_x_data = []
@@ -44,7 +44,7 @@ class SolveDynamicModel:
         self.mu = .01
         self.ep = 0.5
         self.m = 5.0
-        self.g = 9.81
+        self.g = 9.81/50.
         self.pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348
 
 
@@ -178,7 +178,7 @@ class SolveDynamicModel:
         for i in xrange(int(self.move_time*self.rate)):
             self.solx.append(asol[i][3])
             self.soly.append(-asol[i][2])
-            self.solth.append(asol[i][4])
+            self.solth.append(self.angle_adj(asol[i][4]))
         
         # print self.solx      
     
@@ -189,46 +189,54 @@ class SolveDynamicModel:
             self.errorth.append(self.solth[i]-self.pose_th_data[i])
 
 
+    def angle_adj(self, angle):
+        angle = angle%(2*self.pi)
+        angle = (angle+2*self.pi)%(2*self.pi)
+
+        if angle > self.pi:
+            angle -= (2*self.pi)
+        return angle
+
     def plot_data(self):
         self.ode_int()
         self.calc_error()
         plt.figure(1)
-        plt.subplot(311)
+        plt.subplot(211)
         plt.title("Estimated pose of robot (m)")
         xaxis = [x/100. for x in xrange(int(len(self.solx)))]
         plt.plot(xaxis, self.solx, label="x")
         plt.plot(xaxis, self.soly, label="y")        
         plt.legend()
 
-        plt.subplot(312)
+        plt.subplot(212)
         plt.title("Actual pose of robot (m)")
         xaxis2 = [x/100. for x in xrange(int(len(self.pose_x_data)))]
         plt.plot(xaxis2, self.pose_x_data, label="x")
         plt.plot(xaxis2, self.pose_y_data, label="y")
         plt.legend()
 
-        plt.subplot(313)
-        plt.title("Error in pose of robot (m)")
-        xaxis3 = [x/100. for x in xrange(int(len(self.errorx)))]
-        plt.plot(xaxis3, self.errorx, label="x")
-        plt.plot(xaxis3, self.errory, label="y")
-        plt.legend()
+        # plt.subplot(313)
+        # plt.title("Error in pose of robot (m)")
+        # xaxis3 = [x/100. for x in xrange(int(len(self.errorx)))]
+        # plt.plot(xaxis3, self.errorx, label="x")
+        # plt.plot(xaxis3, self.errory, label="y")
+        # plt.legend()
 
         plt.figure(2)
-        plt.subplot(311)
+        plt.subplot(211)
         plt.title("Estimated orientation of robot (rad)")
         plt.plot(xaxis, self.solth, label="theta")
         plt.legend()
 
-        plt.subplot(312)
+        plt.subplot(212)
         plt.title("Actual orientation of robot (rad)")
         plt.plot(xaxis2, self.pose_th_data, label="theta")
         plt.legend()
 
-        plt.subplot(313)
-        plt.title("Error in orientation of robot (rad)")
-        plt.plot(xaxis3, self.errorth, label="theta")
-        plt.legend()
+        # plt.subplot(313)
+        # plt.title("Error in orientation of robot (rad)")
+        # plt.plot(xaxis3, self.errorth, label="theta")
+        # plt.legend()
 
 
         plt.show()
