@@ -73,7 +73,7 @@ class PlotCasterJoints:
         self.print_caster_joints()
 
     def move_wheelchair(self):
-        self.wheel_cmd.linear.x = 0.3
+        self.wheel_cmd.linear.x = -0.3
         self.wheel_cmd.angular.z = 0.0
 
         while rospy.get_time() == 0.0:
