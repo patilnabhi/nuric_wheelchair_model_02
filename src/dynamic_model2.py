@@ -19,7 +19,7 @@ class SolveDynamicModel2:
         rospy.on_shutdown(self.shutdown)
         self.wheel_cmd = Twist()
 
-        self.wheel_cmd.linear.x = 0.3
+        self.wheel_cmd.linear.x = -0.3 # Driving back w/o turn and a non-zero caster orientation
         self.wheel_cmd.angular.z = 0.0
 
         self.move_time = 10.0
