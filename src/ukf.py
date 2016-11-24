@@ -1,69 +1,16 @@
 #!/usr/bin/env python
 import math
 import numpy as np 
-from numpy import eye, zeros, dot, isscalr, outer
+from numpy import eye, zeros, dot, isscalar, outer
 from scipy.linalg import inv, cholesky
-from scipy.stats import multivariate_normal
+# from scipy.stats import multivariate_normal
 from ut import unscented_transform
 from ukf_helper import dot3
 
 
 class UKF(object):
 
-    '''
-    sqrt_fn : callable(ndarray), default = scipy.linalg.cholesky
-            Defines how we compute the square root of a matrix, which has
-            no unique answer. Cholesky is the default choice due to its
-            speed. Typically your alternative choice will be
-            scipy.linalg.sqrtm. Different choices affect how the sigma points
-            are arranged relative to the eigenvectors of the covariance matrix.
-            Usually this will not matter to you; if so the default cholesky()
-            yields maximal performance. As of van der Merwe's dissertation of
-            2004 [6] this was not a well reseached area so I have no advice
-            to give you.
-            If your method returns a triangular matrix it must be upper
-            triangular. Do not use numpy.linalg.cholesky - for historical
-            reasons it returns a lower triangular matrix. The SciPy version
-            does the right thing.
 
-    x_mean_fn : callable  (sigma_points, weights), optional
-        Function that computes the mean of the provided sigma points
-        and weights. Use this if your state variable contains nonlinear
-        values such as angles which cannot be summed.
-        .. code-block:: Python
-            def state_mean(sigmas, Wm):
-                x = np.zeros(3)
-                sum_sin, sum_cos = 0., 0.
-                for i in range(len(sigmas)):
-                    s = sigmas[i]
-                    x[0] += s[0] * Wm[i]
-                    x[1] += s[1] * Wm[i]
-                    sum_sin += sin(s[2])*Wm[i]
-                    sum_cos += cos(s[2])*Wm[i]
-                x[2] = atan2(sum_sin, sum_cos)
-                return x
-
-    z_mean_fn : callable  (sigma_points, weights), optional
-        Same as x_mean_fn, except it is called for sigma points which
-        form the measurements after being passed through hx().
-        
-    residual_x : callable (x, y), optional
-    residual_z : callable (x, y), optional
-        Function that computes the residual (difference) between x and y.
-        You will have to supply this if your state variable cannot support
-        subtraction, such as angles (359-1 degreees is 2, not 358). x and y
-        are state vectors, not scalars. One is for the state variable,
-        the other is for the measurement state.
-        .. code-block:: Python
-            def residual(a, b):
-                y = a[0] - b[0]
-                if y > np.pi:
-                    y -= 2*np.pi
-                if y < -np.pi:
-                    y = 2*np.pi
-                return y
-
-    '''
 
     def __init__(self, dim_x, dim_z, dt, hx, fx, points, sqrt_fn=None, x_mean_fn=None, z_mean_fn=None, residual_x=None, residual_z=None):
 
@@ -152,12 +99,60 @@ class UKF(object):
         self.x = self.x + dot(self.K, self.y)
         self.P = self.P - dot3(self.K, Pz, self.K.T)
 
-        self.log_likelihood = multivariate_normal.logpdf(x=self.y, mean=np.zeros(len(self.y)), cov=Pz, allow_singular=True)
+        # self.log_likelihood = multivariate_normal.logpdf(x=self.y, mean=np.zeros(len(self.y)), cov=Pz, allow_singular=True)
 
 
+'''
+sqrt_fn : callable(ndarray), default = scipy.linalg.cholesky
+            Defines how we compute the square root of a matrix, which has
+            no unique answer. Cholesky is the default choice due to its
+            speed. Typically your alternative choice will be
+            scipy.linalg.sqrtm. Different choices affect how the sigma points
+            are arranged relative to the eigenvectors of the covariance matrix.
+            Usually this will not matter to you; if so the default cholesky()
+            yields maximal performance. As of van der Merwe's dissertation of
+            2004 [6] this was not a well reseached area so I have no advice
+            to give you.
+            If your method returns a triangular matrix it must be upper
+            triangular. Do not use numpy.linalg.cholesky - for historical
+            reasons it returns a lower triangular matrix. The SciPy version
+            does the right thing.
+        x_mean_fn : callable  (sigma_points, weights), optional
+            Function that computes the mean of the provided sigma points
+            and weights. Use this if your state variable contains nonlinear
+            values such as angles which cannot be summed.
+            .. code-block:: Python
+                def state_mean(sigmas, Wm):
+                    x = np.zeros(3)
+                    sum_sin, sum_cos = 0., 0.
+                    for i in range(len(sigmas)):
+                        s = sigmas[i]
+                        x[0] += s[0] * Wm[i]
+                        x[1] += s[1] * Wm[i]
+                        sum_sin += sin(s[2])*Wm[i]
+                        sum_cos += cos(s[2])*Wm[i]
+                    x[2] = atan2(sum_sin, sum_cos)
+                    return x
+        z_mean_fn : callable  (sigma_points, weights), optional
+            Same as x_mean_fn, except it is called for sigma points which
+            form the measurements after being passed through hx().
+        residual_x : callable (x, y), optional
+        residual_z : callable (x, y), optional
+            Function that computes the residual (difference) between x and y.
+            You will have to supply this if your state variable cannot support
+            subtraction, such as angles (359-1 degreees is 2, not 358). x and y
+            are state vectors, not scalars. One is for the state variable,
+            the other is for the measurement state.
+            .. code-block:: Python
+                def residual(a, b):
+                    y = a[0] - b[0]
+                    if y > np.pi:
+                        y -= 2*np.pi
+                    if y < -np.pi:
+                        y = 2*np.pi
+                    return y
 
-
-
+'''
 
 
 
