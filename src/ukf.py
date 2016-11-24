@@ -52,6 +52,7 @@ class UKF(object):
 
 
 
+
     def predict(self, fx_args=()):
 
         dt = self._dt
@@ -65,8 +66,10 @@ class UKF(object):
 
         for i in xrange(self._num_sigmas):
             self.sigmas_f[i] = self.fx(sigmas[i], dt, *fx_args)
+        
 
         self.x, self.P = UT(self.sigmas_f, self.Wm, self.Wc, self.Q, self.x_mean, self.residual_x)
+
 
 
     def update(self, z, hx_args=()):

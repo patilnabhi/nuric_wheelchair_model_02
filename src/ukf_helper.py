@@ -2,6 +2,7 @@
 
 import numpy as np 
 from numpy import array, asarray, isscalar, eye, dot
+from scipy.linalg import inv, cholesky, eigvals
 
 def dot3(A,B,C):
     return dot(A, dot(B,C))
@@ -12,6 +13,80 @@ def normalize_angle(x):
         x -= 2*np.pi 
     return x
 
+def state_mean(sigmas, Wm):
+    x = np.zeros(7)
+
+    sum_sin1, sum_cos1 = 0., 0.
+    sum_sin2, sum_cos2 = 0., 0.
+    sum_sin3, sum_cos3 = 0., 0.
+
+    for i in range(len(sigmas)):
+        s = sigmas[i]
+        x[0] += s[0] * Wm[i]
+        x[1] += s[1] * Wm[i]
+        x[2] += s[2] * Wm[i]
+        x[3] += s[3] * Wm[i]        
+
+        sum_sin1 += np.sin(s[4])*Wm[i]
+        sum_cos1 += np.cos(s[4])*Wm[i]
+
+        sum_sin2 += np.sin(s[5])*Wm[i]
+        sum_cos2 += np.cos(s[5])*Wm[i]
+
+        sum_sin3 += np.sin(s[6])*Wm[i]
+        sum_cos3 += np.cos(s[6])*Wm[i]
+
+    x[4] = np.arctan2(sum_sin1, sum_cos1)
+    x[5] = np.arctan2(sum_sin2, sum_cos2)
+    x[6] = np.arctan2(sum_sin3, sum_cos3)
+
+    return x
+
+def meas_mean(sigmas, Wm):
+    z = np.zeros(3)
+
+    sum_sin1, sum_cos1 = 0., 0.
+    
+
+    for i in range(len(sigmas)):
+        s = sigmas[i]
+        z[0] += s[0] * Wm[i]
+        z[1] += s[1] * Wm[i]
+                
+
+        sum_sin1 += np.sin(s[2])*Wm[i]
+        sum_cos1 += np.cos(s[2])*Wm[i]
+
+        
+
+    z[2] = np.arctan2(sum_sin1, sum_cos1)
+
+    return z
+
+def residual_x(a, b):
+    y = np.zeros(7)
+    
+    for i in xrange(len(a)):
+        y[:4] = a[:4] - b[:4]
+        y[4] = sub_angle(a[4] - b[4])
+        y[5] = sub_angle(a[5] - b[5])
+        y[6] = sub_angle(a[6] - b[6])
+
+    return y
+
+def residual_z(a, b):
+    y = np.zeros(3)
+    
+    for i in xrange(len(a)):
+        y[:2] = a[:2] - b[:2]
+        y[2] = sub_angle(a[2] - b[2])
+        
+    return y
+
+def sub_angle(angle):
+    if angle > np.pi:
+        angle -= 2*np.pi
+    return angle
 
 class MerweScaledSigmaPoints(object):
 
@@ -74,7 +149,10 @@ class MerweScaledSigmaPoints(object):
             P = np.asarray(P)
 
         lambda_ = self.alpha**2 * (n + self.kappa) - n
-        U = self.sqrt((lambda_ + n)*P)
+        
+        matt = (lambda_ + n)*P
+        # print eigvals(matt)
+        U = self.sqrt(matt)
 
         sigmas = np.zeros((2*n+1, n))
         sigmas[0] = x

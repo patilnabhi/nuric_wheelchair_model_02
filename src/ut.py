@@ -2,7 +2,7 @@
 
 import numpy as np 
 
-def unscented_transform(self, sigmas, Wm, Wc, noise_cov=None, mean_fn=None, residual_fn=None):
+def unscented_transform(sigmas, Wm, Wc, noise_cov=None, mean_fn=None, residual_fn=None):
 
     kmax, n = sigmas.shape
 
