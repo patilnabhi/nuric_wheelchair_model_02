@@ -53,14 +53,15 @@ class UKF(object):
 
 
 
-    def predict(self, fx_args=()):
+    def predict(self, UT=None, fx_args=()):
 
         dt = self._dt
 
         if not isinstance(fx_args, tuple):
             fx_args = (fx_args,)
 
-        UT = unscented_transform
+        if UT is None:
+            UT = unscented_transform
 
         sigmas = self.points_fn.sigma_points(self.x, self.P)
 
@@ -68,10 +69,10 @@ class UKF(object):
             self.sigmas_f[i] = self.fx(sigmas[i], dt, *fx_args)
         
         self.x, self.P = UT(self.sigmas_f, self.Wm, self.Wc, self.Q, self.x_mean, self.residual_x)
+        # print self.x
 
 
-
-    def update(self, z, hx_args=()):
+    def update(self, z, R=None, UT=None, hx_args=()):
 
         if z is None:
             return
@@ -79,7 +80,8 @@ class UKF(object):
         if not isinstance(hx_args, tuple):
             hx_args = (hx_args,)
 
-        UT = unscented_transform
+        if UT is None:
+            UT = unscented_transform
 
         R = self.R
 
@@ -100,6 +102,8 @@ class UKF(object):
 
         self.x = self.x + dot(self.K, self.y)
         self.P = self.P - dot3(self.K, Pz, self.K.T)
+
+        # print zp
 
         # self.log_likelihood = multivariate_normal.logpdf(x=self.y, mean=np.zeros(len(self.y)), cov=Pz, allow_singular=True)
 

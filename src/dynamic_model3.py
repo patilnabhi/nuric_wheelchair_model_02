@@ -25,7 +25,7 @@ class SolveDynamicModel2:
 
 
         self.move_time = 15.0
-        self.rate = 100
+        self.rate = 50
 
         self.pose_x_data = []
         self.pose_y_data = []
@@ -70,7 +70,7 @@ class SolveDynamicModel2:
 
         self.count = 0
 
-        self.dt = 0.5
+        self.dt = 1./self.rate
 
         self.actual_pose = rospy.Subscriber('/odom', Odometry, self.actual_pose_callback)
 
@@ -129,6 +129,7 @@ class SolveDynamicModel2:
         start = rospy.get_time()
         self.get_caster_data = 0
         self.get_pose = 0
+        rospy.sleep(1)
         self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.pose_y, self.pose_x, self.pose_th, self.angle_adj(self.r_caster_angle+self.pi), self.angle_adj(self.l_caster_angle+self.pi)]
 
         x0=np.array(self.ini_val)
@@ -156,12 +157,12 @@ class SolveDynamicModel2:
             self.l_caster_data.append(self.l_caster_angle)
             self.r_caster_data.append(self.r_caster_angle)
 
-            print len(self.pose_x_data)
-            print len(sol)
+            # print len(self.pose_x_data)
+            # print len(sol)
 
             count += 1
 
-            rospy.sleep(0.01)
+            self.r.sleep()
             # self.save, self.save_caster_data = 1, 1
 
 
@@ -229,7 +230,7 @@ class SolveDynamicModel2:
 
     def fx(self, x0):
         solver = ode(self.fun)
-        solver.set_integrator('dopri5')
+        solver.set_integrator('dop853')
 
         t0 = 0.0
         # x0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -238,8 +239,8 @@ class SolveDynamicModel2:
         # print x0
         solver.set_initial_value(x0, t0)
 
-        t1 = 0.01
-        N = 20
+        t1 = self.dt
+        N = 50
         t = np.linspace(t0, t1, N)
         sol = np.empty((N, 7))
         sol[0] = x0
@@ -348,69 +349,69 @@ class SolveDynamicModel2:
         plt.figure(1)
         plt.subplot(431)
         plt.title("Pose x (m)")
-        xaxis = [x/10. for x in xrange(len(self.solx))]
+        xaxis = [x/self.rate for x in xrange(len(self.solx))]
         plt.plot(xaxis, self.solx, label="est")
-        xaxis = [x/10. for x in xrange(len(self.pose_x_data))]
+        xaxis = [x/self.rate for x in xrange(len(self.pose_x_data))]
         plt.plot(xaxis, self.pose_x_data, label="actual")
         plt.legend()
 
         plt.subplot(432)
         plt.title("Orientation (rad)")
-        xaxis = [x/100. for x in xrange(len(self.solth))]
+        xaxis = [x/self.rate for x in xrange(len(self.solth))]
         plt.plot(xaxis, self.solth, label="est")
-        xaxis = [x/100. for x in xrange(len(self.pose_th_data))]
+        xaxis = [x/self.rate for x in xrange(len(self.pose_th_data))]
         plt.plot(xaxis, self.pose_th_data, label="actual")
         plt.legend()
 
         plt.subplot(433)
         plt.title("R Caster Orientation (rad)")
-        xaxis = [x/100. for x in xrange(len(self.soldel1))]
+        xaxis = [x/self.rate for x in xrange(len(self.soldel1))]
         plt.plot(xaxis, self.soldel1, label="est")
-        xaxis = [x/100. for x in xrange(len(self.r_caster_data))]
+        xaxis = [x/self.rate for x in xrange(len(self.r_caster_data))]
         plt.plot(xaxis, self.r_caster_data, label="actual")
         plt.legend()
 
         plt.subplot(434)
         plt.title("Error pose x (m)")
-        xaxis = [x/100. for x in xrange(len(self.errorx))]
+        xaxis = [x/self.rate for x in xrange(len(self.errorx))]
         plt.plot(xaxis, self.errorx)
 
         plt.subplot(435)
         plt.title("Error Orientation (rad)")
-        xaxis = [x/100. for x in xrange(len(self.errorth))]
+        xaxis = [x/self.rate for x in xrange(len(self.errorth))]
         plt.plot(xaxis, self.errorth)
 
         plt.subplot(436)
         plt.title("Error R Caster Orientation (rad)")
-        xaxis = [x/100. for x in xrange(len(self.errordel1))]
+        xaxis = [x/self.rate for x in xrange(len(self.errordel1))]
         plt.plot(xaxis, self.errordel1)
 
         plt.subplot(437)
         plt.title("Pose y (m)")
-        xaxis = [x/100. for x in xrange(len(self.soly))]
+        xaxis = [x/self.rate for x in xrange(len(self.soly))]
         plt.plot(xaxis, self.soly, label="est")
-        xaxis = [x/100. for x in xrange(len(self.pose_y_data))]
+        xaxis = [x/self.rate for x in xrange(len(self.pose_y_data))]
         plt.plot(xaxis, self.pose_y_data, label="actual")
         plt.legend()
 
 
         plt.subplot(4,3,10)
         plt.title("Error pose y (m)")
-        xaxis = [x/100. for x in xrange(len(self.errory))]
+        xaxis = [x/self.rate for x in xrange(len(self.errory))]
         plt.plot(xaxis, self.errory)
 
 
         plt.subplot(438)
         plt.title("L Caster Orientation (rad)")
-        xaxis = [x/100. for x in xrange(len(self.soldel2))]
+        xaxis = [x/self.rate for x in xrange(len(self.soldel2))]
         plt.plot(xaxis, self.soldel2, label="est")
-        xaxis = [x/100. for x in xrange(len(self.l_caster_data))]
+        xaxis = [x/self.rate for x in xrange(len(self.l_caster_data))]
         plt.plot(xaxis, self.l_caster_data, label="actual")
         plt.legend()
 
         plt.subplot(4,3,11)
         plt.title("Error L Caster Orientation (rad)")
-        xaxis = [x/100. for x in xrange(len(self.errordel2))]
+        xaxis = [x/self.rate for x in xrange(len(self.errordel2))]
         plt.plot(xaxis, self.errordel2)
 
         plt.show()

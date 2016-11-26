@@ -24,7 +24,7 @@ class UKFWheelchair(object):
         self.wheel_cmd.angular.z = 0.0
 
         self._move_time = 10.0
-        self._rate = 100
+        self._rate = 50
 
         # constants for ode equations
         # (approximations)
@@ -39,7 +39,7 @@ class UKFWheelchair(object):
         # wheelchair constants
         self.wh_consts = [0.58, 0.19, 0.06]
 
-        self.dt = 0.01
+        self.dt = 0.02
 
 
 
@@ -102,22 +102,22 @@ class UKFWheelchair(object):
         while (rospy.get_time() - start < self._move_time) and not rospy.is_shutdown():
 
             
-            print len(zs)
+            # print len(zs)
             z = np.array([self.odom_x, self.odom_y, self.odom_th])
             zs.append(z)
 
-            # kf.predict()
-            # kf.update(z)
+            kf.predict()
+            kf.update(z)
 
             # xs.append(kf.x)
 
-            # print kf.x
+            print kf.x
 
                 
             self.pub_twist.publish(self.wheel_cmd)
 
             count += 1
-            rospy.sleep(0.01)
+            self.r.sleep()
         
         # stop the robot
         self.pub_twist.publish(Twist())
@@ -209,7 +209,7 @@ class UKFWheelchair(object):
 
     def shutdown(self):
         # Stop the robot when shutting down the node.
-        rospy.loginfo("Stopping x[4]e robot...")
+        rospy.loginfo("Stopping the robot...")
         self.pub_twist.publish(Twist())
         rospy.sleep(1)
 
