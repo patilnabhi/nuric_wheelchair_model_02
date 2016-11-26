@@ -2,13 +2,14 @@
 
 import rospy
 import sys
-from ukf_helper import MerweScaledSigmaPoints, state_mean, meas_mean, residual_x, residual_z
+from ukf_helper import MerweScaledSigmaPoints, state_mean, meas_mean, residual_x, residual_z, normalize_angle, rKN
 from ukf import UKF
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from tf.transformations import euler_from_quaternion
 import numpy as np 
-from scipy.integrate import odeint
+from scipy.integrate import odeint, ode
+from math import sin, cos
 
 class UKFWheelchair(object):
 
@@ -19,11 +20,11 @@ class UKFWheelchair(object):
         rospy.on_shutdown(self.shutdown)
 
         self.wheel_cmd = Twist()
-        self.wheel_cmd.linear.x = 0.0
+        self.wheel_cmd.linear.x = 0.3
         self.wheel_cmd.angular.z = 0.0
 
-        self._move_time = 5.0
-        self._rate = 1000
+        self._move_time = 10.0
+        self._rate = 100
 
         # constants for ode equations
         # (approximations)
@@ -38,8 +39,11 @@ class UKFWheelchair(object):
         # wheelchair constants
         self.wh_consts = [0.58, 0.19, 0.06]
 
+        self.dt = 0.01
 
-        self.ini_val = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+
+        self.ini_val = [0.1, 0.2, 0.0, 0.0, 0.0, 0.0+self.pi, 0.0+self.pi]
 
         self.odom_data = rospy.Subscriber('/odom', Odometry, self.odom_cb)
 
@@ -53,6 +57,7 @@ class UKFWheelchair(object):
 
     def odom_cb(self, odom_data):
 
+        # if self.save:
         (_,_,yaw) = euler_from_quaternion([odom_data.pose.pose.orientation.x, odom_data.pose.pose.orientation.y, odom_data.pose.pose.orientation.z, odom_data.pose.pose.orientation.w])
 
         self.odom_x, self.odom_y, self.odom_th = odom_data.pose.pose.position.x, odom_data.pose.pose.position.y, yaw
@@ -61,17 +66,16 @@ class UKFWheelchair(object):
     def run_ukf_wheelchair(self):
 
         def fx(x, dt):
-            # for i in xrange(len(x)):
-            x[4], x[5], x[6] = self.angle_adj(x[4]), self.angle_adj(x[5]), self.angle_adj(x[6])
-            self.ode_solve(x, dt)
-            return np.array(self.asol)
+            x[4], x[5], x[6] = normalize_angle(x[4]), normalize_angle(x[5]), normalize_angle(x[6])
+            sol = self.ode_solve(x)
+            return np.array(sol)
 
 
-        def hx(x):
+        def hx(x):                        
             return np.array([x[3], x[2], x[4]])
 
         dt = 1./self._rate
-        points = MerweScaledSigmaPoints(n=7, alpha=.5, beta=2., kappa=0.)
+        points = MerweScaledSigmaPoints(n=7, alpha=.5, beta=2., kappa=4.)
         kf = UKF(dim_x=7, dim_z=3, dt=dt, fx=fx, hx=hx, points=points, sqrt_fn=None, x_mean_fn=state_mean, z_mean_fn=meas_mean, residual_x=residual_x, residual_z=residual_z)
 
         kf.x = np.array(self.ini_val)   # initial mean state
@@ -90,37 +94,42 @@ class UKFWheelchair(object):
 
         start = rospy.get_time()
 
+
+
         rospy.loginfo("Moving robot...")
 
         count = 0
         while (rospy.get_time() - start < self._move_time) and not rospy.is_shutdown():
+
             
+            print len(zs)
             z = np.array([self.odom_x, self.odom_y, self.odom_th])
             zs.append(z)
 
-            kf.predict()
-            kf.update(z)
+            # kf.predict()
+            # kf.update(z)
 
-            xs.append(kf.x)
+            # xs.append(kf.x)
 
-            if count%100 == 0:
-                print "Updated x: ", kf.x
+            # print kf.x
 
                 
             self.pub_twist.publish(self.wheel_cmd)
-            self.r.sleep()
 
             count += 1
+            rospy.sleep(0.01)
+        
         # stop the robot
         self.pub_twist.publish(Twist())
-        
+        rospy.sleep(1)
 
 
-    def solvr(self, x, t):
+    def fun(self, t, x):
+        thdot, ydot, x, y, th, alpha1, alpha2 = x 
 
-        omega1 = self.omegas(self.delta(x[5]),self.delta(x[6]))[0]
-        omega2 = self.omegas(self.delta(x[5]),self.delta(x[6]))[1]
-        omega3 = self.omegas(self.delta(x[5]),self.delta(x[6]))[2]
+        omega1 = self.omegas(self.delta(alpha1),self.delta(alpha2))[0]
+        omega2 = self.omegas(self.delta(alpha1),self.delta(alpha2))[1]
+        omega3 = self.omegas(self.delta(alpha1),self.delta(alpha2))[2]
 
         dl = self.wh_consts[0]
         df = self.wh_consts[1]
@@ -129,27 +138,41 @@ class UKFWheelchair(object):
         # Assume v_w = 0  ==>  ignore lateral movement of wheelchair
         # ==>  remove function/equation involving v_w from the model
         eq1 = omega3/self.Iz
-        eq2 = ((-omega1*np.sin(x[4]) + omega2*np.cos(x[4]))/self.m) - 0.*x[0]*x[2]
-        eq3 = ((-omega1*np.cos(x[4]) - omega2*np.sin(x[4]))/self.m) + x[0]*x[1]
-        eq4 = x[1]*np.sin(x[4]) - 0.*x[2]*np.cos(x[4])
-        eq5 = -x[1]*np.cos(x[4]) - 0.*x[2]*np.sin(x[4])
-        eq6 = x[0]
-        eq7 = (x[0]*(dl*np.cos(x[5]) - (df*np.sin(x[5])/2) - dc)/dc) + (-x[1]*np.sin(x[5])/dc)
-        eq8 = (x[0]*(dl*np.cos(x[6]) + (df*np.sin(x[6])/2) - dc)/dc) + (-x[1]*np.sin(x[6])/dc)
+        eq2 = ((-omega1*sin(th) + omega2*cos(th))/self.m)
+        # eq3 = ((-omega1*cos(th) - omega2*sin(th))/self.m) + thdot*ydot
+        eq4 = ydot*sin(th)
+        eq5 = -ydot*cos(th) 
+        eq6 = thdot
+        eq7 = (thdot*(dl*cos(alpha1) - (df*sin(alpha1)/2) - dc)/dc) + (-ydot*sin(alpha1)/dc)
+        eq8 = (thdot*(dl*cos(alpha2) + (df*sin(alpha2)/2) - dc)/dc) + (-ydot*sin(alpha2)/dc)
 
-        return [eq1, eq2, eq4, eq5, eq6, eq7, eq8]
+        f = [eq1, eq2, eq4, eq5, eq6, eq7, eq8]
+
+        return f
 
 
+    def ode_solve(self, x0):
 
-    def ode_solve(self, ini_val, dt):
+        solver = ode(self.fun)
+        solver.set_integrator('dopri5')
 
-        a_t = np.arange(0.0, dt)
-        # ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, 0.0, 0.0, 0.0, self.pi, self.pi]
-        # ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.pose_y, self.pose_x, self.pose_th, self.angle_adj(self.r_caster_angle+self.pi), self.angle_adj(self.l_caster_angle+self.pi)]
+        t0 = 0.0
+        # x0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        solver.set_initial_value(x0, t0)
 
-        
-        asol = odeint(self.solvr, ini_val, a_t)
-        self.asol = asol
+        t1 = self.dt
+        N = 20
+        t = np.linspace(t0, t1, N)
+        sol = np.empty((N, 7))
+        sol[0] = x0
+
+        k=1
+        while solver.successful() and solver.t < t1:
+            solver.integrate(t[k])
+            sol[k] = solver.y
+            k += 1
+
+        return sol[-1]
 
 
     def omegas(self, delta1, delta2):
@@ -177,23 +200,16 @@ class UKFWheelchair(object):
 
         return [omega1, omega2, omega3]
 
-    def angle_adj(self, angle):
-        angle = angle%self.two_pi
-        angle = (angle+self.two_pi)%(self.two_pi)
-
-        if angle > self.pi:
-            angle -= self.two_pi
-        return angle
+    
 
     def delta(self, alpha):
-        # return self.angle_adj(self.two_pi - (alpha%self.two_pi))
-        return self.angle_adj(-alpha)
+        return normalize_angle(-alpha)
 
 
 
     def shutdown(self):
         # Stop the robot when shutting down the node.
-        rospy.loginfo("Stopping the robot...")
+        rospy.loginfo("Stopping x[4]e robot...")
         self.pub_twist.publish(Twist())
         rospy.sleep(1)
 

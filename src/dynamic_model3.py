@@ -9,7 +9,7 @@ import random
 import matplotlib.pyplot as plt
 from math import sin, cos, atan2
 import numpy as np
-from scipy.integrate import odeint
+from scipy.integrate import odeint, ode
 from tf.transformations import euler_from_quaternion
 from ukf_helper import normalize_angle
 
@@ -20,11 +20,11 @@ class SolveDynamicModel2:
         rospy.on_shutdown(self.shutdown)
         self.wheel_cmd = Twist()
 
-        self.wheel_cmd.linear.x = 0.3 # Driving back w/o turn and a non-zero caster orientation
-        self.wheel_cmd.angular.z = 0.1
+        self.wheel_cmd.linear.x = 0.4 # Driving back w/o turn and a non-zero caster orientation
+        self.wheel_cmd.angular.z = 0.2
 
 
-        self.move_time = 10.0
+        self.move_time = 15.0
         self.rate = 100
 
         self.pose_x_data = []
@@ -68,6 +68,10 @@ class SolveDynamicModel2:
         self.save_caster_data = 0
         self.get_pose = 0
 
+        self.count = 0
+
+        self.dt = 0.5
+
         self.actual_pose = rospy.Subscriber('/odom', Odometry, self.actual_pose_callback)
 
         self.caster_joints = rospy.Subscriber('/caster_joints', FloatArray, self.caster_joints_callback)
@@ -79,12 +83,7 @@ class SolveDynamicModel2:
         self.move_wheelchair()
 
         self.plot_data()
-
-        # print len(self.pose_x_data)
-        # xaxis = [x/400. for x in xrange(400)]
-
-
-        
+       
 
 
     def actual_pose_callback(self, actual_pose):
@@ -101,12 +100,12 @@ class SolveDynamicModel2:
             self.pose_y_data.append(actual_pose.pose.pose.position.y)
             self.pose_th_data.append(yaw)
 
-        if self.get_pose:
-            (_,_,yaw) = euler_from_quaternion([actual_pose.pose.pose.orientation.x, actual_pose.pose.pose.orientation.y, actual_pose.pose.pose.orientation.z, actual_pose.pose.pose.orientation.w])
+        # if self.get_pose:
+        (_,_,yaw) = euler_from_quaternion([actual_pose.pose.pose.orientation.x, actual_pose.pose.pose.orientation.y, actual_pose.pose.pose.orientation.z, actual_pose.pose.pose.orientation.w])
 
-            self.pose_x = actual_pose.pose.pose.position.x
-            self.pose_y = actual_pose.pose.pose.position.y
-            self.pose_th = yaw
+        self.pose_x = actual_pose.pose.pose.position.x
+        self.pose_y = actual_pose.pose.pose.position.y
+        self.pose_th = yaw
         # print self.pose_x, self.pose_y
 
     def caster_joints_callback(self, caster_joints):       
@@ -114,37 +113,68 @@ class SolveDynamicModel2:
         if self.save_caster_data:
             self.l_caster_data.append(caster_joints.data[0])
             self.r_caster_data.append(caster_joints.data[1])
-        if self.get_caster_data:
-            self.l_caster_angle, self.r_caster_angle = caster_joints.data[0], caster_joints.data[1]
+        # if self.get_caster_data:
+        self.l_caster_angle, self.r_caster_angle = caster_joints.data[0], caster_joints.data[1]
 
     def move_wheelchair(self):
+
+        
 
         self.get_caster_data = 1
         self.get_pose = 1
         self.r.sleep()
+        
         while rospy.get_time() == 0.0:
             continue
         start = rospy.get_time()
         self.get_caster_data = 0
         self.get_pose = 0
+        self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.pose_y, self.pose_x, self.pose_th, self.angle_adj(self.r_caster_angle+self.pi), self.angle_adj(self.l_caster_angle+self.pi)]
 
+        x0=np.array(self.ini_val)
+        x0 = np.reshape(x0, (1,7))
+        sol = x0
+
+        # print sol.shape
+
+        # print self.pose_x
+        count = 0
         rospy.loginfo("Moving robot...")
         while (rospy.get_time() - start < self.move_time) and not rospy.is_shutdown():
-            self.save, self.save_caster_data = 1, 1
-            self.pub_twist.publish(self.wheel_cmd)        
+            
+            self.pub_twist.publish(self.wheel_cmd)    
+            
+            sol1 = self.fx(x0)
+            sol1 = np.reshape(sol1, (1,7))
+            # print sol1.shape
+            sol = np.append(sol, sol1, axis=0)
+            x0 = sol1
+
+            self.pose_x_data.append(self.pose_x)
+            self.pose_y_data.append(self.pose_y)
+            self.pose_th_data.append(self.pose_th)
+            self.l_caster_data.append(self.l_caster_angle)
+            self.r_caster_data.append(self.r_caster_angle)
+
+            print len(self.pose_x_data)
+            print len(sol)
+
+            count += 1
+
+            rospy.sleep(0.01)
+            # self.save, self.save_caster_data = 1, 1
+
+
 
         # Stop the robot
         self.pub_twist.publish(Twist())
         self.save, self.save_caster_data = 0, 0
-        
+        # print len(sol)
+        self.asol = sol
         
 
         rospy.sleep(1)
 
-    # def save_data(self):
-    #     self.pose_x_data.append(self.pose_x)
-    #     self.pose_y_data.append(self.pose_y)
-    #     self.pose_th_data.append(self.pose_th)
 
     def omegas(self, delta1, delta2):
 
@@ -170,6 +200,62 @@ class SolveDynamicModel2:
         omega3 = (F2u*(Rr/2.-s))-(F1u*(Rr/2.-s))-((F2w+F1w)*d)+((F4u*cos(delta2)+F4w*sin(delta2))*(Rr/2.-s))-((F3u*cos(delta1)-F3w*sin(delta1))*(Rr/2.+s))+((F4w*cos(delta2)-F4u*sin(delta2)+F3w*cos(delta1)-F3u*sin(delta1))*(L-d))
 
         return [omega1, omega2, omega3]
+
+    def fun(self, t, x):
+        thdot, ydot, x, y, th, alpha1, alpha2 = x 
+
+        omega1 = self.omegas(self.delta(alpha1),self.delta(alpha2))[0]
+        omega2 = self.omegas(self.delta(alpha1),self.delta(alpha2))[1]
+        omega3 = self.omegas(self.delta(alpha1),self.delta(alpha2))[2]
+
+        dl = self.wh_consts[0]
+        df = self.wh_consts[1]
+        dc = self.wh_consts[2]
+
+        # Assume v_w = 0  ==>  ignore lateral movement of wheelchair
+        # ==>  remove function/equation involving v_w from the model
+        eq1 = omega3/self.Iz
+        eq2 = ((-omega1*sin(th) + omega2*cos(th))/self.m)
+        eq3 = ((-omega1*cos(th) - omega2*sin(th))/self.m) + thdot*ydot
+        eq4 = ydot*sin(th)
+        eq5 = -ydot*cos(th) 
+        eq6 = thdot
+        eq7 = (thdot*(dl*cos(alpha1) - (df*sin(alpha1)/2) - dc)/dc) + (-ydot*sin(alpha1)/dc)
+        eq8 = (thdot*(dl*cos(alpha2) + (df*sin(alpha2)/2) - dc)/dc) + (-ydot*sin(alpha2)/dc)
+
+        f = [eq1, eq2, eq4, eq5, eq6, eq7, eq8]
+
+        return f
+
+    def fx(self, x0):
+        solver = ode(self.fun)
+        solver.set_integrator('dopri5')
+
+        t0 = 0.0
+        # x0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        x0 = np.reshape(x0, (7,))
+        x0 = x0.tolist()
+        # print x0
+        solver.set_initial_value(x0, t0)
+
+        t1 = 0.01
+        N = 20
+        t = np.linspace(t0, t1, N)
+        sol = np.empty((N, 7))
+        sol[0] = x0
+
+        k=1
+        while solver.successful() and solver.t < t1:
+            solver.integrate(t[k])
+            sol[k] = solver.y
+            k += 1
+
+        # out = sol[-1]
+        # out[5] = self.angle_adj(out[5])
+        # out[6] = self.angle_adj(out[6])
+        return sol[-1]
+
+
 
     def solvr(self, q, t):
 
@@ -232,7 +318,7 @@ class SolveDynamicModel2:
 
     # def angle_adj(self, angle):
     #     angle = angle%self.two_pi
-    #     # angle = (angle+self.pi)%(self.two_pi)
+    #     angle = (angle+self.pi)%(self.two_pi)
 
     #     if angle > self.pi:
     #         angle -= self.two_pi
@@ -243,9 +329,9 @@ class SolveDynamicModel2:
         return self.angle_adj(-alpha)
 
     def plot_data(self):
-        self.ode_int()
+        # self.asol = self.fx()
 
-        for i in xrange(int(self.move_time*self.rate)):
+        for i in xrange(len(self.asol)):
             self.solx.append(self.asol[i][3])
             self.soly.append(-self.asol[i][2])
             self.solth.append(self.angle_adj(self.asol[i][4])) 
@@ -262,9 +348,9 @@ class SolveDynamicModel2:
         plt.figure(1)
         plt.subplot(431)
         plt.title("Pose x (m)")
-        xaxis = [x/100. for x in xrange(len(self.solx))]
+        xaxis = [x/10. for x in xrange(len(self.solx))]
         plt.plot(xaxis, self.solx, label="est")
-        xaxis = [x/100. for x in xrange(len(self.pose_x_data))]
+        xaxis = [x/10. for x in xrange(len(self.pose_x_data))]
         plt.plot(xaxis, self.pose_x_data, label="actual")
         plt.legend()
 

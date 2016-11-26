@@ -13,66 +13,7 @@ def normalize_angle(x):
         x -= 2*np.pi 
     return x
 
-# Fourth order Runge-Kutta for n-dimensions
-# hs = time-step
-# (http://www.codeproject.com/Tips/792927/Fourth-Order-Runge-Kutta-Method-in-Python)
 
-def rKN(x, fx, n, hs):
-    k1 = []
-    k2 = []
-    k3 = []
-    k4 = []
-    xk = []
-    for i in range(n):
-        k1.append(fx[i](x)*hs)
-    for i in range(n):
-        xk.append(x[i] + k1[i]*0.5)
-    for i in range(n):
-        k2.append(fx[i](xk)*hs)
-    for i in range(n):
-        xk[i] = x[i] + k2[i]*0.5
-    for i in range(n):
-        k3.append(fx[i](xk)*hs)
-    for i in range(n):
-        xk[i] = x[i] + k3[i]
-    for i in range(n):
-        k4.append(fx[i](xk)*hs)
-    for i in range(n):
-        x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6
-    return x
-
-
-
-# Fourth order Runge-Kutta for 3-dimensions (faster by factor of 3)
-# hs = time-step
-# (http://www.codeproject.com/Tips/792927/Fourth-Order-Runge-Kutta-Method-in-Python)
-
-def rK3(a, b, c, fa, fb, fc, hs):
-    a1 = fa(a, b, c)*hs
-    b1 = fb(a, b, c)*hs
-    c1 = fc(a, b, c)*hs
-    ak = a + a1*0.5
-    bk = b + b1*0.5
-    ck = c + c1*0.5
-    a2 = fa(ak, bk, ck)*hs
-    b2 = fb(ak, bk, ck)*hs
-    c2 = fc(ak, bk, ck)*hs
-    ak = a + a2*0.5
-    bk = b + b2*0.5
-    ck = c + c2*0.5
-    a3 = fa(ak, bk, ck)*hs
-    b3 = fb(ak, bk, ck)*hs
-    c3 = fc(ak, bk, ck)*hs
-    ak = a + a3
-    bk = b + b3
-    ck = c + c3
-    a4 = fa(ak, bk, ck)*hs
-    b4 = fb(ak, bk, ck)*hs
-    c4 = fc(ak, bk, ck)*hs
-    a = a + (a1 + 2*(a2 + a3) + a4)/6
-    b = b + (b1 + 2*(b2 + b3) + b4)/6
-    c = c + (c1 + 2*(c2 + c3) + c4)/6
-    return a, b, c
 
 def state_mean(sigmas, Wm):
     x = np.zeros(7)
