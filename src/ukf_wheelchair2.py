@@ -25,8 +25,10 @@ class UKFWheelchair2(object):
         self.wheel_cmd.angular.z = 0.2
 
 
-        self.move_time = 1.0
+        self.move_time = 10.0
         self.rate = 50
+        self.factor = 10
+        self.dt = self.factor*1.0/self.rate 
 
         self.l_caster_data = []
         self.r_caster_data = []
@@ -39,7 +41,6 @@ class UKFWheelchair2(object):
         self.error_alpha1 = []
         self.error_alpha2 = []
 
-        self.dt = 1./self.rate
 
         # wheelchair constants
         self.wh_consts = [0.58, 0.19, 0.06]
@@ -73,9 +74,8 @@ class UKFWheelchair2(object):
             x[0], x[1] = normalize_angle(x[0]), normalize_angle(x[1])
             self.prev_alpha1 = x[0]
             self.prev_alpha2 = x[1]
-            # print x[0], x[1]
-            # print "1: ", x[0]
-            return self.motion_model(x, dt)
+
+            return self.caster_model(x, dt)
 
         def hx(x):
             # print "2: ", self.prev_alpha1
@@ -90,7 +90,8 @@ class UKFWheelchair2(object):
         points = MerweScaledSigmaPoints(n=2, alpha=.01, beta=1., kappa=-1.)
         kf = UKF(dim_x=2, dim_z=2, dt=self.dt, fx=fx, hx=hx, points=points, sqrt_fn=None, x_mean_fn=self.state_mean, z_mean_fn=self.meas_mean, residual_x=self.residual_x, residual_z=self.residual_z)
 
-        self.ini_val = [normalize_angle(self.r_caster_angle-np.pi), normalize_angle(self.l_caster_angle-np.pi)]
+        # self.ini_val = [normalize_angle(self.l_caster_angle-np.pi), normalize_angle(self.r_caster_angle-np.pi)]
+        self.ini_val = [1.3, -3.14]
 
         kf.x = np.array(self.ini_val)   # initial mean state
         kf.P *= 0.0001  # kf.P = eye(dim_x) ; adjust covariances if necessary
@@ -102,28 +103,31 @@ class UKFWheelchair2(object):
 
         count = 0
 
+        print "Est1: ", normalize_angle(kf.x[0]+np.pi), normalize_angle(kf.x[1]+np.pi) 
+
         rospy.loginfo("Moving robot...")
         start = rospy.get_time()
         while (rospy.get_time() - start < self.move_time) and not rospy.is_shutdown():
 
             z = np.array([self.odom_vx, self.odom_vth])
-            zs.append(z)
+            
+            if count%self.factor==0:
 
-            kf.predict()
-            # if count%50==0:
-            #     print "1: ", kf.x
-            # kf.update(z)
-            # if count%50==0:
-            #     print "1: ", kf.x
+                zs.append(z)
 
-            # if count%10==0:
-            print "1: ", normalize_angle(kf.x[0]+np.pi), normalize_angle(kf.x[1]+np.pi)
-            print "2: ", normalize_angle(self.r_caster_angle), normalize_angle(self.l_caster_angle)
+                kf.predict()   
+                kf.update(z)
+
+                xs.append([normalize_angle(kf.x[0]+np.pi), normalize_angle(kf.x[1]+np.pi)])
+ 
+                print "Est: ", normalize_angle(kf.x[0]+np.pi), normalize_angle(kf.x[1]+np.pi)
+                print "Act: ", normalize_angle(self.l_caster_angle), normalize_angle(self.r_caster_angle)
+
+                self.l_caster_data.append(self.l_caster_angle)
+                self.r_caster_data.append(self.r_caster_angle)
+
 
             self.pub_twist.publish(self.wheel_cmd)    
-
-            self.l_caster_data.append(self.l_caster_angle)
-            self.r_caster_data.append(self.r_caster_angle)
             
             count += 1
             self.r.sleep()
@@ -133,7 +137,7 @@ class UKFWheelchair2(object):
         self.pub_twist.publish(Twist())
         rospy.sleep(1)
 
-    def solvr_motion_model(self, x, t, vx=None, vth=None):
+    def solvr_caster_model(self, x, t, vx=None, vth=None):
 
         dl = self.wh_consts[0]
         df = self.wh_consts[1]
@@ -144,18 +148,18 @@ class UKFWheelchair2(object):
         if vth is None:
             vth = self.wheel_cmd.angular.z
 
-        eq1 = (vth*(dl*cos(x[0]) - (df*sin(x[0])/2) - dc)/dc) + (-vx*sin(x[0])/dc)
-        eq2 = (vth*(dl*cos(x[1]) + (df*sin(x[1])/2) - dc)/dc) + (-vx*sin(x[1])/dc)
+        eq1 = (vth*(dl*cos(x[0]) - (df*sin(x[0])/2) - dc)/dc) + (vx*sin(x[0])/dc)
+        eq2 = (vth*(dl*cos(x[1]) + (df*sin(x[1])/2) - dc)/dc) + (vx*sin(x[1])/dc)
 
         return [eq1, eq2]
 
 
-    def motion_model(self, x0, dt):
+    def caster_model(self, x0, dt):
 
-        a_t = np.arange(0.0, dt, 0.001)
+        a_t = np.arange(0.0, dt, 0.01)
         # ini_val = [normalize_angle(self.r_caster_angle-np.pi), normalize_angle(self.l_caster_angle-np.pi)]
         ini_val = x0
-        asol = odeint(self.solvr_motion_model, ini_val, a_t)
+        asol = odeint(self.solvr_caster_model, ini_val, a_t)
         
         # self.asol = asol
         
@@ -172,8 +176,8 @@ class UKFWheelchair2(object):
 
         a2 = (dl*cos(alpha1) - (df*sin(alpha1)/2) - dc)/dc
         a4 = (dl*cos(alpha2) + (df*sin(alpha2)/2) - dc)/dc
-        a1 = -sin(alpha1)/dc
-        a3 = -sin(alpha2)/dc
+        a1 = sin(alpha1)/dc
+        a3 = sin(alpha2)/dc
 
         b1 = alpha1dot
         b2 = alpha2dot
@@ -197,14 +201,16 @@ class UKFWheelchair2(object):
             x[0] += s[0] * Wm[i]
             x[1] += s[1] * Wm[i] 
 
-        x[0] = normalize_angle(x[0])
-        x[1] = normalize_angle(x[1])    
+            
 
         #     sum_sin1 += np.sin(s[0])*Wm[i]
         #     sum_cos1 += np.cos(s[0])*Wm[i]
 
         #     sum_sin2 += np.sin(s[1])*Wm[i]
         #     sum_cos2 += np.cos(s[1])*Wm[i]
+
+        # x[0] = normalize_angle(x[0])
+        # x[1] = normalize_angle(x[1])
 
         # x[0] = np.arctan2(sum_sin1, sum_cos1)
         # x[1] = np.arctan2(sum_sin2, sum_cos2)
@@ -224,18 +230,23 @@ class UKFWheelchair2(object):
     def residual_x(self, a, b):
         y = np.zeros(2)
         
-        for i in xrange(len(a)):
-            # y[:2] = a[:2] - b[:2]
-            y[0] = sub_angle(a[0] - b[0])
-            y[1] = sub_angle(a[1] - b[1])
+        # for i in xrange(len(a)):
+        # y[0] = a[0] - b[0]
+        # y[1] = a[1] - b[1]
+        y[0] = sub_angle(a[0] - b[0])
+        y[1] = sub_angle(a[1] - b[1])
+        # y[0] = normalize_angle(y[0])
+        # y[1] = normalize_angle(y[1])
 
         return y
 
     def residual_z(self, a, b):
         y = np.zeros(2)
         
-        for i in xrange(len(a)):
-            y[:2] = a[:2] - b[:2]
+        # for i in xrange(len(a)):
+        y[0] = a[0] - b[0]
+        y[1] = a[1] - b[1]
+        # y[:2] = a[:2] - b[:2]
             
         return y
     

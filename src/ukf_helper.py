@@ -149,7 +149,9 @@ def residual_z(a, b):
 
 def sub_angle(angle):
     if angle > np.pi:
-        angle -= 2*np.pi
+        angle -= np.pi
+    if angle < -np.pi:
+        angle += np.pi
     return angle
 
 class MerweScaledSigmaPoints(object):
