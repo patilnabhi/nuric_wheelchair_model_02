@@ -5,3 +5,7 @@
 * Developed a kinematic/dynamic model for the wheelchair, taking into account CWOs and friction between wheels and ground
 * Implementing an Unscented Kalman Filter (UKF) algorithm to estimate CWOs using kinematic model
 * With the estimated CWOs, getting a better approximation of pose with a dynamic model of the wheelchair
+
+* A video of CWOs estimation can be viewed at - [https://vimeo.com/180925714/6683be80eb]
+
+[https://vimeo.com/180925714/6683be80eb]: https://vimeo.com/180925714/6683be80eb
