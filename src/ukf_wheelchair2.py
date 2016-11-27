@@ -23,8 +23,8 @@ class UKFWheelchair2(object):
 
         self.wheel_cmd = Twist()
 
-        self.wheel_cmd.linear.x = 0.3 
-        self.wheel_cmd.angular.z = -0.2
+        self.wheel_cmd.linear.x = 0.2 
+        self.wheel_cmd.angular.z = 0.3
 
 
         self.move_time = 10.0
