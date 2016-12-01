@@ -11,6 +11,8 @@ def normalize_angle(x):
     x = x%(2*np.pi)
     if x > np.pi:
         x -= 2*np.pi 
+    # if x < -np.pi:
+    #     x += 2*np.pi
     return x
 
 # Fourth order Runge-Kutta for n-dimensions
