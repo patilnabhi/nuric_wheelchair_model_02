@@ -2,7 +2,7 @@
 
 import rospy
 import sys
-from ukf_helper import MerweScaledSigmaPoints, state_mean, meas_mean, residual_x, residual_z, normalize_angle, rKN, sub_angle
+from ukf_helper import MerweScaledSigmaPoints, SimplexSigmaPoints, JulierSigmaPoints, state_mean, meas_mean, residual_x, residual_z, normalize_angle, rKN, sub_angle
 from ukf import UKF
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
@@ -12,6 +12,7 @@ import numpy as np
 from scipy.integrate import odeint, ode
 from math import sin, cos
 import matplotlib.pyplot as plt
+from scipy.linalg import sqrtm
 
 
 class UKFWheelchair3(object):
@@ -23,15 +24,13 @@ class UKFWheelchair3(object):
 
         self.wheel_cmd = Twist()
 
-        self.wheel_cmd.linear.x = 0.2 
-        self.wheel_cmd.angular.z = 0.1
+        self.wheel_cmd.linear.x = 0.3 
+        self.wheel_cmd.angular.z = 0.0
 
 
-        self.move_time = 4.0
+        self.move_time = 6.0
         self.rate = 50
-        self.factor = 1
-        self.dt = self.factor*1.0/self.rate
-        # self.dt = 0.1 
+        self.dt = 1.0/self.rate
 
         self.zs = []
 
@@ -43,13 +42,14 @@ class UKFWheelchair3(object):
         self.m = 5.0
         self.g = 9.81/50.
 
-        self.save_caster_data = []
-        self.save_pose_data = []
+
+        self.pose_x_data = []
+        self.pose_y_data = []
+        self.pose_th_data = []
+        self.l_caster_data = []
+        self.r_caster_data = []
 
         self.asol = []
-
-        
-
 
         # wheelchair constants
         self.wh_consts = [0.58, 0.19, 0.06]
@@ -62,9 +62,9 @@ class UKFWheelchair3(object):
 
         self.move_wheelchair()
 
-        # self.solve_ukf()
+        self.save_data()
 
-        self.plot_data()
+        # self.plot_data()
 
 
 
@@ -72,7 +72,7 @@ class UKFWheelchair3(object):
         self.l_caster_angle, self.r_caster_angle = caster_joints.data[0], caster_joints.data[1]
 
     def odom_cb(self, odom_data):
-        self.odom_vx, self.odom_vth = odom_data.twist.twist.linear.x, odom_data.twist.twist.angular.z
+        # self.odom_vx, self.odom_vth = odom_data.twist.twist.linear.x, odom_data.twist.twist.angular.z
         (_,_,yaw) = euler_from_quaternion([odom_data.pose.pose.orientation.x, odom_data.pose.pose.orientation.y, odom_data.pose.pose.orientation.z, odom_data.pose.pose.orientation.w])
         self.odom_x, self.odom_y, self.odom_th = odom_data.pose.pose.position.x, odom_data.pose.pose.position.y, yaw
 
@@ -86,7 +86,7 @@ class UKFWheelchair3(object):
         rospy.sleep(1)
 
         
-        self.ini_val = [0.1, 0.2, 0.0, 0.0, 0.0, np.pi, np.pi]
+        self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.odom_y, self.odom_x, self.odom_th, self.th_to_al(self.l_caster_angle), self.th_to_al(self.r_caster_angle)]
 
         count = 0
 
@@ -97,17 +97,18 @@ class UKFWheelchair3(object):
         
         while (rospy.get_time() - start < self.move_time) and not rospy.is_shutdown():
             
-            z = np.array([self.odom_x, self.odom_y, self.odom_th])
+            z = np.array([self.odom_x, -self.odom_y, self.odom_th])
+
+            self.pub_twist.publish(self.wheel_cmd)
             
             self.zs.append(z)
 
-            print len(self.zs)
+            self.pose_x_data.append(self.odom_x)
+            self.pose_y_data.append(self.odom_y)
+            self.pose_th_data.append(self.odom_th)
+            self.l_caster_data.append(self.l_caster_angle)
+            self.r_caster_data.append(self.r_caster_angle)
 
-            self.save_caster_data.append([self.l_caster_angle, self.r_caster_angle])
-
-
-            self.pub_twist.publish(self.wheel_cmd)    
-            
             count += 1
             self.r.sleep()
 
@@ -122,203 +123,79 @@ class UKFWheelchair3(object):
 
         def fx(x, dt):
 
-            x[4], x[5], x[6] = normalize_angle(x[4]), normalize_angle(x[5]), normalize_angle(x[6])
-            sol = self.ode_solve(x)
+            # x[4], x[5], x[6] = x[4], normalize_angle(x[5]), normalize_angle(x[6])
+            sol = self.ode_int(x)
             return np.array(sol)
 
         def hx(x):
             return np.array([x[3], x[2], normalize_angle(x[4])])
 
 
-        points = MerweScaledSigmaPoints(n=7, alpha=.4, beta=2., kappa=1.)
+        # points = MerweScaledSigmaPoints(n=7, alpha=.00001, beta=2., kappa=-4.)
+        points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
+        # points = SimplexSigmaPoints(n=7)
         kf = UKF(dim_x=7, dim_z=3, dt=self.dt, fx=fx, hx=hx, points=points, sqrt_fn=None, x_mean_fn=self.state_mean, z_mean_fn=self.meas_mean, residual_x=self.residual_x, residual_z=self.residual_z)
 
-        kf.x = np.array(self.ini_val)   # initial mean state
+        x0 = np.array(self.ini_val)
+        # x0 = np.reshape(x0, (1,7))
+
+        kf.x = x0   # initial mean state
+        kf.Q *= np.diag([0.0001, 0.0001, 0.0001, 0.0001, 0.0001, .01, .01])
         kf.P *= 0.0001  # kf.P = eye(dim_x) ; adjust covariances if necessary
-        # kf.R *= 0
-        # kf.Q *= 0
+        kf.R *= 0.0001
+        
 
-        # Ms, Ps = kf.batch_filter(self.zs)
-        # Ms2 = self.solve_est()
-
-        # print self.l_caster_angle, self.r_caster_angle
-        # # print Ms[-1,5], Ms[-1,6]
-        # print Ms2[-1][5], Ms[-1][6]
-
-
-    def solve_est(self):
-        count=0
-        Ms = []
-        x = np.array(self.ini_val)
-        while count < 200:
-            sol = self.ode_solve(x)
-            Ms.append(sol)
-            x = sol
-            count += 1
+        Ms, Ps = kf.batch_filter(self.zs)
+        Ms[:,5] = self.al_to_th(Ms[:,5])
+        Ms[:,6] = self.al_to_th(Ms[:,6])
 
         return Ms
 
 
+    def solve_est(self):
+        count=0
 
-    def plot_data(self):
+        x0=np.array(self.ini_val)
+        x0 = np.reshape(x0, (1,7))
+        sol = x0
 
+        while count < int(self.rate*self.move_time):
 
-        plt.figure(1)
-
-        # Plot left caster
-        plt.subplot(221)
-        plt.title("L Caster Orientation (rad)")
-
-        data = np.array(self.solve_est())
-        data = data[:,6]
-
-        data_est_l = [normalize_angle(angle-np.pi) for angle in data]
-        xaxis = [x/50. for x in xrange(len(data_est_l))]
-        plt.plot(xaxis, data_est_l, label="est")
-
-
-        data_act = np.array(self.save_caster_data)
-        data_act = data_act[:,0]
-
-        xaxis = [x/50. for x in xrange(len(data_act))]
-        plt.plot(xaxis, data_act, label="act")
-
-        plt.legend()
-
-        # plt.subplot(223)
-        # plt.title("Error L Caster Orientation (rad)")
-        # error_data = self.calc_error(data_act, data_ukf_l)
-        # xaxis = [x/5. for x in xrange(len(error_data))]
-        # plt.plot(xaxis, error_data, label="act - ukf")
-
-        # # plt.subplot(325)
-        # # plt.title("Error L Caster Orientation (rad)")
-        # error_data = self.calc_error2(data_act, data_est_l)
-        # xaxis = [x/50. for x in xrange(len(error_data))]
-        # plt.plot(xaxis, error_data, label="act - est")
-
-        # plt.legend()
-
-
-        
-        plt.show()
-
-
-
-    def state_mean(self, sigmas, Wm):
-        x = np.zeros(7)
-
-        sum_sin1, sum_cos1 = 0., 0.
-        sum_sin2, sum_cos2 = 0., 0.
-        sum_sin3, sum_cos3 = 0., 0.
-
-        for i in xrange(len(sigmas)):
-            s = sigmas[i]
-
-            x[0] += s[0] * Wm[i]
-            x[1] += s[1] * Wm[i]
-            x[2] += s[2] * Wm[i]
-            x[3] += s[3] * Wm[i]
-            x[5] += s[5] * Wm[i]
-            x[6] += s[6] * Wm[i]
-
-            sum_sin1 += np.sin(s[4])*Wm[i]
-            sum_cos1 += np.cos(s[4])*Wm[i]
-
-            # sum_sin2 += np.sin(s[5])*Wm[i]
-            # sum_cos2 += np.cos(s[5])*Wm[i]
-
-            # sum_sin3 += np.sin(s[6])*Wm[i]
-            # sum_cos3 += np.cos(s[6])*Wm[i]
-
-        x[4] = np.arctan2(sum_sin1, sum_cos1)
-        # x[5] = np.arctan2(sum_sin2, sum_cos2)
-        # x[6] = np.arctan2(sum_sin3, sum_cos3)
-
-        return x
-
-    def meas_mean(self, sigmas, Wm):
-        z = np.zeros(3)
-
-        sum_sin1, sum_cos1 = 0., 0.
-
-        for i in xrange(len(sigmas)):
-            s = sigmas[i]
-
-            z[0] += s[0] * Wm[i]
-            z[1] += s[1] * Wm[i]
+            sol1 = self.ode_int(x0)
+            sol1 = np.reshape(sol1, (1,7))
+            sol = np.append(sol, sol1, axis=0)
+            x0 = sol1
             
+            count += 1
 
-            sum_sin1 += np.sin(s[2])*Wm[i]
-            sum_cos1 += np.cos(s[2])*Wm[i]
-
-        z[2] = np.arctan2(sum_sin1, sum_cos1)
-
-        return z
-
-    def residual_x(self, a, b):
-        y = np.zeros(7)
-
-        y[0] = a[0] - b[0]
-        y[1] = a[1] - b[1]
-        y[2] = a[2] - b[2]
-        y[3] = a[3] - b[3]
-        y[4] = sub_angle(a[4] - b[4])
-        y[5] = sub_angle(a[5] - b[5])
-        y[6] = sub_angle(a[6] - b[6])
-
-
-        y[4] = normalize_angle(y[4])
-
-        y[5] = normalize_angle(y[5])
-        y[6] = normalize_angle(y[6])
-
-        return y 
-
-    def residual_z(self, a, b):
-        y = np.zeros(3)
-
-        y[0] = a[0] - b[0]
-        y[1] = a[1] - b[1]
-        y[2] = sub_angle(a[2] - b[2])
-
-        y[2] = normalize_angle(y[2])
-
-        return y
-
-    def solvr(self, x, t):
-        omega1 = self.omegas(self.delta(x[5]),self.delta(x[6]))[0]
-        omega2 = self.omegas(self.delta(x[5]),self.delta(x[6]))[1]
-        omega3 = self.omegas(self.delta(x[5]),self.delta(x[6]))[2]
-
-        dl = self.wh_consts[0]
-        df = self.wh_consts[1]
-        dc = self.wh_consts[2]
-
-        # Assume v_w = 0  ==>  ignore lateral movement of wheelchair
-        # ==>  remove function/equation involving v_w from the model
-        eq1 = omega3/self.Iz
-        eq2 = ((-omega1*sin(x[4]) + omega2*cos(x[4]))/self.m) - 0.*x[0]*x[2]
-        eq3 = ((-omega1*cos(x[4]) - omega2*sin(x[4]))/self.m) + x[0]*x[1]
-        eq4 = -x[1]*sin(x[4]) - 0.*x[2]*cos(x[4])
-        eq5 = x[1]*cos(x[4]) - 0.*x[2]*sin(x[4])
-        eq6 = x[0]
-        eq7 = (x[0]*(dl*cos(x[5]) - (df*sin(x[5])/2) - dc)/dc) + (-x[1]*sin(x[5])/dc)
-        eq8 = (x[0]*(dl*cos(x[6]) + (df*sin(x[6])/2) - dc)/dc) + (-x[1]*sin(x[6])/dc)
-
-        return [eq1, eq2, eq4, eq5, eq6, eq7, eq8]
-
-
-    def ode_solve(self, x0):
-        a_t = np.arange(0.0, 0.02, 0.005)
-        ini_val = x0
-        asol = odeint(self.solvr, ini_val, a_t)
-
-        sol = asol[-1]
-
-        sol[4], sol[5], sol[6] = normalize_angle(sol[4]), normalize_angle(sol[5]), normalize_angle(sol[6])
-        
         return sol
+
+
+
+    def save_data(self):
+
+        rospy.loginfo("Saving data...")
+
+        np.savetxt('data.csv', np.c_[self.pose_x_data, self.pose_y_data, self.pose_th_data, self.l_caster_data, self.r_caster_data])
+
+        ukf_data = self.solve_ukf()
+        x0 = [item for item in ukf_data[:,0].tolist()]
+        x1 = [item for item in ukf_data[:,1].tolist()]
+        x2 = [-item for item in ukf_data[:,2].tolist()]
+        x3 = [item for item in ukf_data[:,3].tolist()]
+        x4 = [normalize_angle(item) for item in ukf_data[:,4].tolist()]
+        x5 = [normalize_angle(item) for item in ukf_data[:,5].tolist()]
+        x6 = [normalize_angle(item) for item in ukf_data[:,6].tolist()]
+        np.savetxt('data_ukf.csv', np.c_[x0,x1,x2,x3,x4,x5,x6])
+
+        sol = self.solve_est()
+        sol[:,2] = -sol[:,2]
+        sol[:,5] = self.al_to_th(sol[:,5])
+        sol[:,6] = self.al_to_th(sol[:,6])
+        np.savetxt('data_est.csv', sol)
+
+
+
 
     def omegas(self, delta1, delta2):
 
@@ -345,12 +222,119 @@ class UKFWheelchair3(object):
 
         return [omega1, omega2, omega3]
 
+    def fun(self, t, x):
+        thdot, ydot, x, y, th, alpha1, alpha2 = x 
+
+        omega1 = self.omegas(self.delta(alpha1),self.delta(alpha2))[0]
+        omega2 = self.omegas(self.delta(alpha1),self.delta(alpha2))[1]
+        omega3 = self.omegas(self.delta(alpha1),self.delta(alpha2))[2]
+
+        dl = self.wh_consts[0]
+        df = self.wh_consts[1]
+        dc = self.wh_consts[2]
+
+        # Assume v_w = 0  ==>  ignore lateral movement of wheelchair
+        # ==>  remove function/equation involving v_w from the model
+        eq1 = omega3/self.Iz
+        eq2 = ((-omega1*sin(th) + omega2*cos(th))/self.m)
+        eq3 = ((-omega1*cos(th) - omega2*sin(th))/self.m) + thdot*ydot
+        eq4 = ydot*sin(th)
+        eq5 = -ydot*cos(th) 
+        eq6 = thdot
+        eq7 = (thdot*(dl*cos(alpha1) - (df*sin(alpha1)/2) - dc)/dc) - (ydot*sin(alpha1)/dc)
+        eq8 = (thdot*(dl*cos(alpha2) + (df*sin(alpha2)/2) - dc)/dc) - (ydot*sin(alpha2)/dc)
+
+        f = [eq1, eq2, eq4, eq5, eq6, eq7, eq8]
+
+        return f
+
+
+    def ode_int(self, x0):
+        solver = ode(self.fun)
+        solver.set_integrator('dop853')
+
+        t0 = 0.0
+        x0 = np.reshape(x0, (7,))
+        x0 = x0.tolist()
+        solver.set_initial_value(x0, t0)
+
+        t1 = self.dt
+        N = 50
+        t = np.linspace(t0, t1, N)
+        sol = np.empty((N, 7))
+        sol[0] = x0
+
+        k=1
+        while solver.successful() and solver.t < t1:
+            solver.integrate(t[k])
+            sol[k] = solver.y
+            k += 1
+
+        solf = sol[-1]
+
+        # solf = np.reshape(solf, (1,7))
+
+        return solf
+
+
+    def th_to_al(self, th):
+        return th-np.pi 
+
+    def al_to_th(self, al):
+        return al+np.pi
 
     def delta(self, alpha):
-        return normalize_angle(-alpha)
+        return -alpha
 
 
-    
+
+    def state_mean(self, sigmas, Wm):
+        x = np.zeros(7)
+
+        sum_sin4 = np.sum(np.dot(np.sin(sigmas[:,4]), Wm))
+        sum_cos4 = np.sum(np.dot(np.cos(sigmas[:,4]), Wm))
+        sum_sin5 = np.sum(np.dot(np.sin(sigmas[:,5]), Wm))
+        sum_cos5 = np.sum(np.dot(np.cos(sigmas[:,5]), Wm))
+        sum_sin6 = np.sum(np.dot(np.sin(sigmas[:,6]), Wm))
+        sum_cos6 = np.sum(np.dot(np.cos(sigmas[:,6]), Wm))
+
+        x[0] = np.sum(np.dot(sigmas[:, 0], Wm))
+        x[1] = np.sum(np.dot(sigmas[:, 1], Wm))
+        x[2] = np.sum(np.dot(sigmas[:, 2], Wm))
+        x[3] = np.sum(np.dot(sigmas[:, 3], Wm))
+        x[4] = np.arctan2(sum_sin4, sum_cos4)
+        x[5] = np.arctan2(sum_sin5, sum_cos5)
+        x[6] = np.arctan2(sum_sin6, sum_cos6)
+
+
+        return x
+
+    def meas_mean(self, sigmas, Wm):
+        z = np.zeros(3)
+
+        z[0] = np.sum(np.dot(sigmas[:, 0], Wm))
+        z[1] = np.sum(np.dot(sigmas[:, 1], Wm))
+
+        sum_sin = np.sum(np.dot(np.sin(sigmas[:,2]), Wm))
+        sum_cos = np.sum(np.dot(np.cos(sigmas[:,2]), Wm))
+
+        z[2] = np.arctan2(sum_sin, sum_cos)
+
+        return z
+
+    def residual_x(self, a, b):
+        y = a - b
+
+        y[4], y[5], y[6] = normalize_angle(y[4]), normalize_angle(y[5]), normalize_angle(y[6])
+
+        return y 
+
+    def residual_z(self, a, b):
+        y = a - b
+
+        y[2] = normalize_angle(y[2])
+
+        return y
 
 
     def shutdown(self):

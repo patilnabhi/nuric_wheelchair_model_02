@@ -2,7 +2,7 @@
 
 import numpy as np 
 from numpy import array, asarray, isscalar, eye, dot
-from scipy.linalg import inv, cholesky, eigvals
+from scipy.linalg import inv, cholesky, eigvals, sqrtm
 
 def dot3(A,B,C):
     return dot(A, dot(B,C))
@@ -18,6 +18,254 @@ def normalize_angle(x):
 # Fourth order Runge-Kutta for n-dimensions
 # hs = time-step
 # (http://www.codeproject.com/Tips/792927/Fourth-Order-Runge-Kutta-Method-in-Python)
+
+class JulierSigmaPoints(object):
+
+    def __init__(self,n,  kappa, sqrt_method=None, subtract=None):
+        """ Generates sigma points and weights according to Simon J. Julier
+        and Jeffery K. Uhlmann's original paper []. It parametizes the sigma
+        points using kappa.
+        Parameters
+        ----------
+        n : int
+            Dimensionality of the state. 2n+1 weights will be generated.
+        kappa : float, default=0.
+            Scaling factor that can reduce high order errors. kappa=0 gives
+            the standard unscented filter. According to [Julier], if you set
+            kappa to 3-dim_x for a Gaussian x you will minimize the fourth
+            order errors in x and P.
+        sqrt_method : function(ndarray), default=scipy.linalg.cholesky
+            Defines how we compute the square root of a matrix, which has
+            no unique answer. Cholesky is the default choice due to its
+            speed. Typically your alternative choice will be
+            scipy.linalg.sqrtm. Different choices affect how the sigma points
+            are arranged relative to the eigenvectors of the covariance matrix.
+            Usually this will not matter to you; if so the default cholesky()
+            yields maximal performance. As of van der Merwe's dissertation of
+            2004 [6] this was not a well reseached area so I have no advice
+            to give you.
+            If your method returns a triangular matrix it must be upper
+            triangular. Do not use numpy.linalg.cholesky - for historical
+            reasons it returns a lower triangular matrix. The SciPy version
+            does the right thing.
+        subtract : callable (x, y), optional
+            Function that computes the difference between x and y.
+            You will have to supply this if your state variable cannot support
+            subtraction, such as angles (359-1 degreees is 2, not 358). x and y
+        References
+        ----------
+        .. [1] Julier, Simon J.; Uhlmann, Jeffrey "A New Extension of the Kalman
+            Filter to Nonlinear Systems". Proc. SPIE 3068, Signal Processing,
+            Sensor Fusion, and Target Recognition VI, 182 (July 28, 1997)
+       """
+
+        self.n = n
+        self.kappa = kappa
+        if sqrt_method is None:
+            self.sqrt = cholesky
+        else:
+            self.sqrt = sqrt_method
+
+        if subtract is None:
+            self.subtract= np.subtract
+        else:
+            self.subtract = subtract
+
+
+    def num_sigmas(self):
+        """ Number of sigma points for each variable in the state x"""
+        return 2*self.n + 1
+
+
+    def sigma_points(self, x, P):
+        r""" Computes the sigma points for an unscented Kalman filter
+        given the mean (x) and covariance(P) of the filter.
+        kappa is an arbitrary constant. Returns sigma points.
+        Works with both scalar and array inputs:
+        sigma_points (5, 9, 2) # mean 5, covariance 9
+        sigma_points ([5, 2], 9*eye(2), 2) # means 5 and 2, covariance 9I
+        Parameters
+        ----------
+        X : array-like object of the means of length n
+            Can be a scalar if 1D.
+            examples: 1, [1,2], np.array([1,2])
+        P : scalar, or np.array
+           Covariance of the filter. If scalar, is treated as eye(n)*P.
+        kappa : float
+            Scaling factor.
+        Returns
+        -------
+        sigmas : np.array, of size (n, 2n+1)
+            2D array of sigma points :math:`\chi`. Each column contains all of
+            the sigmas for one dimension in the problem space. They
+            are ordered as:
+            .. math::
+                :nowrap:
+                \begin{eqnarray}
+                  \chi[0]    = &x \\
+                  \chi[1..n] = &x + [\sqrt{(n+\kappa)P}]_k \\
+                  \chi[n+1..2n] = &x - [\sqrt{(n+\kappa)P}]_k
+                \end{eqnarray}
+                
+        """
+
+        assert self.n == np.size(x)
+        n = self.n
+
+        if np.isscalar(x):
+            x = np.asarray([x])
+
+        n = np.size(x)  # dimension of problem
+
+        if np.isscalar(P):
+            P = np.eye(n)*P
+
+        sigmas = np.zeros((2*n+1, n))
+
+        # implements U'*U = (n+kappa)*P. Returns lower triangular matrix.
+        # Take transpose so we can access with U[i]
+        U = self.sqrt((n + self.kappa) * P)
+
+        sigmas[0] = x
+        for k in range(n):
+            sigmas[k+1]   = self.subtract(x, -U[k])
+            sigmas[n+k+1] = self.subtract(x, U[k])
+        return sigmas
+
+
+    def weights(self):
+        """ Computes the weights for the unscented Kalman filter. In this
+        formulatyion the weights for the mean and covariance are the same.
+        Returns
+        -------
+        Wm : ndarray[2n+1]
+            weights for mean
+        Wc : ndarray[2n+1]
+            weights for the covariances
+        """
+        
+        n = self.n
+        k = self.kappa
+
+        W = np.full(2*n+1, .5 / (n + k))
+        W[0] = k / (n+k)
+        return W, W
+
+
+class SimplexSigmaPoints(object):
+
+    def __init__(self, n, alpha=1, sqrt_method=None, subtract=None):
+        """ Generates sigma points and weights according to the simplex 
+        method presented in [1] DOI: 10.1051/cocv/2010006
+        Parameters
+        ----------
+        n : int
+            Dimensionality of the state. n+1 weights will be generated.
+        sqrt_method : function(ndarray), default=scipy.linalg.cholesky
+            Defines how we compute the square root of a matrix, which has
+            no unique answer. Cholesky is the default choice due to its
+            speed. Typically your alternative choice will be
+            scipy.linalg.sqrtm
+            If your method returns a triangular matrix it must be upper
+            triangular. Do not use numpy.linalg.cholesky - for historical
+            reasons it returns a lower triangular matrix. The SciPy version
+            does the right thing.
+        subtract : callable (x, y), optional
+            Function that computes the difference between x and y.
+            You will have to supply this if your state variable cannot support
+            subtraction, such as angles (359-1 degreees is 2, not 358). x and y
+            are state vectors, not scalars.
+        References
+        ----------
+        .. [1] Phillippe Moireau and Dominique Chapelle "Reduced-Order Unscented
+        Kalman Filtering with Application to Parameter Identification in
+        Large-Dimensional Systems"
+        """
+
+        self.n = n
+        self.alpha = alpha
+        if sqrt_method is None:
+            self.sqrt = cholesky
+        else:
+            self.sqrt = sqrt_method
+
+        if subtract is None:
+            self.subtract= np.subtract
+        else:
+            self.subtract = subtract
+
+
+    def num_sigmas(self):
+        """ Number of sigma points for each variable in the state x"""
+        return self.n + 1
+
+
+    def sigma_points(self, x, P):
+        """ Computes the implex sigma points for an unscented Kalman filter
+        given the mean (x) and covariance(P) of the filter.
+        Returns tuple of the sigma points and weights.
+        Works with both scalar and array inputs:
+        sigma_points (5, 9, 2) # mean 5, covariance 9
+        sigma_points ([5, 2], 9*eye(2), 2) # means 5 and 2, covariance 9I
+        Parameters
+        ----------
+        X An array-like object of the means of length n
+            Can be a scalar if 1D.
+            examples: 1, [1,2], np.array([1,2])
+        P : scalar, or np.array
+           Covariance of the filter. If scalar, is treated as eye(n)*P.
+        Returns
+        -------
+        sigmas : np.array, of size (n, n+1)
+            Two dimensional array of sigma points. Each column contains all of
+            the sigmas for one dimension in the problem space.
+            Ordered by Xi_0, Xi_{1..n}
+        """
+
+        assert self.n == np.size(x), "expected size {}, but size is {}".format(
+            self.n, np.size(x))
+
+        n = self.n
+
+        if np.isscalar(x):
+            x = np.asarray([x])
+        x = x.reshape(-1, 1)
+        if np.isscalar(P):
+            P = np.eye(n)*P
+        else:
+            P = np.asarray(P)
+
+        U = self.sqrt(P)
+
+        lambda_ = n / (n + 1)
+        Istar = np.array([[-1/np.sqrt(2*lambda_), 1/np.sqrt(2*lambda_)]])
+        for d in range(2, n+1):
+            row = np.ones((1, Istar.shape[1] + 1)) * 1. / np.sqrt(lambda_*d*(d + 1))
+            row[0, -1] = -d / np.sqrt(lambda_ * d * (d + 1))
+            Istar = np.r_[np.c_[Istar, np.zeros((Istar.shape[0]))], row]
+
+        I = np.sqrt(n)*Istar
+        scaled_unitary = U.dot(I)
+
+        sigmas = self.subtract(x, -scaled_unitary)
+        return sigmas.T
+
+
+    def weights(self):
+        """ Computes the weights for the scaled unscented Kalman filter.
+        Returns
+        -------
+        Wm : ndarray[n+1]
+            weights for mean
+        Wc : ndarray[n+1]
+            weights for the covariances
+        """
+
+        n = self.n
+        c = 1. / (n + 1)
+        W = np.full(n + 1, c)
+
+        return W, W
 
 def rKN(x, fx, n, hs):
     k1 = []

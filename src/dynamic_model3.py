@@ -24,7 +24,7 @@ class SolveDynamicModel3:
         self.wheel_cmd.angular.z = 0.2
 
 
-        self.move_time = 5.0
+        self.move_time = 6.0
         self.rate = 50
         self.dt = 1./self.rate
 
@@ -128,6 +128,8 @@ class SolveDynamicModel3:
 
         # Stop the robot
         self.pub_twist.publish(Twist())
+
+        self.count = count
 
         rospy.sleep(1)
 
@@ -257,7 +259,7 @@ class SolveDynamicModel3:
         x0 = np.reshape(x0, (1,7))
         sol = x0
 
-        while count < 200:
+        while count < self.count-1:
 
             sol1 = self.ode_int(x0)
             sol1 = np.reshape(sol1, (1,7))
@@ -277,9 +279,10 @@ class SolveDynamicModel3:
         return sol
 
     def save_data(self):
-        np.savetxt('data.csv', np.c_[self.l_caster_data, self.r_caster_data])
+        np.savetxt('data.csv', np.c_[self.pose_x_data, self.pose_y_data, self.pose_th_data, self.l_caster_data, self.r_caster_data])
 
         sol = self.solve_est()
+        sol[:,2] = -sol[:,2]
         sol[:,5] = self.al_to_th(sol[:,5])
         sol[:,6] = self.al_to_th(sol[:,6])
         np.savetxt('data_est.csv', sol)

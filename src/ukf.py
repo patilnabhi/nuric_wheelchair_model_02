@@ -2,7 +2,7 @@
 import math
 import numpy as np 
 from numpy import eye, zeros, dot, isscalar, outer
-from scipy.linalg import inv, cholesky
+from scipy.linalg import inv, cholesky, sqrtm
 # from scipy.stats import multivariate_normal
 from ut import unscented_transform
 from ukf_helper import dot3
@@ -157,6 +157,7 @@ class UKF(object):
             means = zeros((z_n, self._dim_x))
         else:
             means = zeros((z_n, self._dim_x, 1))
+
 
         # state covariances from Kalman Filter
         covariances = zeros((z_n, self._dim_x, self._dim_x))
