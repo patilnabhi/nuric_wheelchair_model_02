@@ -92,6 +92,8 @@ class SolveDynamicModel3:
         self.pose_y = actual_pose.pose.pose.position.y
         self.pose_th = yaw
 
+        # print np.reshape(np.array(actual_pose.pose.covariance), (6,6))
+
     def caster_joints_callback(self, caster_joints):       
  
         self.l_caster_angle, self.r_caster_angle = caster_joints.data[0], caster_joints.data[1]

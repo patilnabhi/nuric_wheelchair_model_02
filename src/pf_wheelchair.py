@@ -3,10 +3,14 @@ from scipy.integrate import ode, odeint
 
 class PF(object):
 
-    def __init__(self, mu_initial, sigma_initial, num_particles, dt, consts, motion_consts, alpha_var):
+    def __init__(self, dim_x, dim_z, mu_initial, sigma_initial, num_particles, dt, consts, motion_consts, alpha_var):
 
-        self.mu_initial = mu_initial
-        self.sigma_initial = sigma_initial
+        
+        self.dim_x = dim_x
+        self.dim_z = dim_z
+
+        self.mu_x_ini = mu_initial
+        self.sig_x_ini = sigma_initial
         self.NUM_PARTICLES = num_particles
 
         self.dt = dt
@@ -32,28 +36,53 @@ class PF(object):
         self.a1 = alpha_var[0]
         self.a2 = alpha_var[1]
 
+        # self.weights = np.zeros((self.dim_x, self.NUM_PARTICLES))
+
 
     def generate_particles(self):
         
-        self.Xt = np.random.multivariate_normal(self.mu_initial, self.sigma_initial, size=self.NUM_PARTICLES)
+        self.Xt = np.random.multivariate_normal(self.mu_x_ini, self.sig_x_ini, size=self.NUM_PARTICLES)
         # print self.Xt
 
     def predict(self):
-
-        self.generate_particles()
 
         self.solve_motion_model(self.Xt, self.dt)
 
 
 
+    def update(self, mu_z, sig_z):
+
+        zt = self.generate_measurement(mu_z, sig_z)
+
+        temp = np.array([self.prob_zt_given_xt(zt,x[2:5],sig_z) for x in self.Xt])
+        self.weights = np.reshape(np.array([np.append(np.append([1., 1.], arr), [1.,1.]) for arr in temp]), (self.dim_x, self.NUM_PARTICLES))
+
+
+
+    def resample(self):
+        size = self.NUM_PARTICLES
+        self.Xt = np.reshape(self.Xt, (self.dim_x, self.NUM_PARTICLES))
+        ranges = np.array([np.cumsum(w/np.sum(w)) for w in self.weights]) # normalize
+        self.Xt = np.reshape(np.array([np.array(p)[np.digitize(np.random.random_sample(size), r)] for p,r in zip(self.Xt,ranges)]), (self.NUM_PARTICLES, self.dim_x))
+
+
+
+    def prob_zt_given_xt(self, zt, xt, sig_z):
+
+        sm = np.diag(sig_z)
+
+        return np.array([1./(s*np.sqrt(2*np.pi))*np.exp(-(z-x)**2./(2*s**2.)) for s,z,x in zip(sm,zt,xt)])
+
+
+    def generate_measurement(self, mu_z, sig_z):
+
+        return np.random.multivariate_normal(mu_z, sig_z)
 
 
     def solve_motion_model(self, X, dt):
 
-        # print np.array([self.ode_int(x, dt, i) for x,i in zip(X,xrange(self.NUM_PARTICLES))])
-        print np.array([self.ode2(x, dt, i) for x,i in zip(X,xrange(self.NUM_PARTICLES))])
+        self.Xt = np.array([self.ode2(x, dt, i) for x,i in zip(X,xrange(self.NUM_PARTICLES))])
 
-        # self.Xt = np.array([self.ode_int(x, dt, i) for x,i in zip(X,xrange(self.NUM_PARTICLES))])
 
 
     def ode2(self, x0, dt, i):
@@ -185,38 +214,44 @@ class PF(object):
         return [a, b, c, d, e, f, g]
 
 
-    def ode_int(self, x0, dt, i):
 
-        a_t = np.arange(0.0, dt, 0.001)
-        sol = odeint(self.solvr, x0, a_t, args=(i,))
-        return sol[-1]
+# ==================================================================================================================
 
+# Slow method using odeint / ode from scipy
+# Might be more accurate though
 
-    def solvr(self, x, t, i):
+    # def ode_int(self, x0, dt, i):
 
-        alpha1hat = x[5] + self.sample(self.a1*x[5]**2.)
-        alpha2hat = x[6] + self.sample(self.a2*x[6]**2.)
-
-        x[5] = alpha1hat[i]
-        x[5] = alpha2hat[i]
-
-        omega1 = self.omegas(self.delta(x[5]),self.delta(x[6]))[0]
-        omega2 = self.omegas(self.delta(x[5]),self.delta(x[6]))[1]
-        omega3 = self.omegas(self.delta(x[5]),self.delta(x[6]))[2]
-
-        omega1, omega2, omega3 = omega1[i], omega2[i], omega3[i]
+    #     a_t = np.arange(0.0, dt, 0.001)
+    #     sol = odeint(self.solvr, x0, a_t, args=(i,))
+    #     return sol[-1]
 
 
+    # def solvr(self, x, t, i):
 
-        # Assume v_w = 0  ==>  ignore lateral movement of wheelchair
-        # ==>  remove function/equation involving v_w from the model
-        eq1 = omega3/self.Iz
-        eq2 = ((-omega1*np.sin(x[4]) + omega2*np.cos(x[4]))/self.m)
-        eq3 = ((-omega1*np.cos(x[4]) - omega2*np.sin(x[4]))/self.m) + x[0]*x[1]
-        eq4 = x[1]*np.sin(x[4])
-        eq5 = -x[1]*np.cos(x[4]) 
-        eq6 = x[0]
-        eq7 = (x[0]*(self.dl*np.cos(x[5]) - (self.df*np.sin(x[5])/2) - self.dc)/self.dc) - (x[1]*np.sin(x[5])/self.dc)
-        eq8 = (x[0]*(self.dl*np.cos(x[6]) + (self.df*np.sin(x[6])/2) - self.dc)/self.dc) - (x[1]*np.sin(x[6])/self.dc)
+    #     alpha1hat = x[5] + self.sample(self.a1*x[5]**2.)
+    #     alpha2hat = x[6] + self.sample(self.a2*x[6]**2.)
 
-        return [eq1, eq2, eq4, eq5, eq6, eq7, eq8]
+    #     x[5] = alpha1hat[i]
+    #     x[5] = alpha2hat[i]
+
+    #     omega1 = self.omegas(self.delta(x[5]),self.delta(x[6]))[0]
+    #     omega2 = self.omegas(self.delta(x[5]),self.delta(x[6]))[1]
+    #     omega3 = self.omegas(self.delta(x[5]),self.delta(x[6]))[2]
+
+    #     omega1, omega2, omega3 = omega1[i], omega2[i], omega3[i]
+
+
+
+    #     # Assume v_w = 0  ==>  ignore lateral movement of wheelchair
+    #     # ==>  remove function/equation involving v_w from the model
+    #     eq1 = omega3/self.Iz
+    #     eq2 = ((-omega1*np.sin(x[4]) + omega2*np.cos(x[4]))/self.m)
+    #     eq3 = ((-omega1*np.cos(x[4]) - omega2*np.sin(x[4]))/self.m) + x[0]*x[1]
+    #     eq4 = x[1]*np.sin(x[4])
+    #     eq5 = -x[1]*np.cos(x[4]) 
+    #     eq6 = x[0]
+    #     eq7 = (x[0]*(self.dl*np.cos(x[5]) - (self.df*np.sin(x[5])/2) - self.dc)/self.dc) - (x[1]*np.sin(x[5])/self.dc)
+    #     eq8 = (x[0]*(self.dl*np.cos(x[6]) + (self.df*np.sin(x[6])/2) - self.dc)/self.dc) - (x[1]*np.sin(x[6])/self.dc)
+
+    #     return [eq1, eq2, eq4, eq5, eq6, eq7, eq8]

@@ -11,7 +11,7 @@ class PFDemo():
 
         rospy.init_node('pf_demo')
 
-        self._num_particles = 100
+        self._num_particles = 2
         self._dt = 0.02
         self._consts = [0.58, 0.19, 0.06]
         self._motion_consts = [15.0, 5., 9.81/50., .01, .01, .2, .0, .58, .27*2, .0]
@@ -27,12 +27,21 @@ class PFDemo():
         mu_initial = [0.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0]
         sigma_initial = np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1])
         
-        pf = PF(mu_initial, sigma_initial, self._num_particles, self._dt, self._consts, self._motion_consts, self._alpha_var)
+        pf = PF(7, 3, mu_initial, sigma_initial, self._num_particles, self._dt, self._consts, self._motion_consts, self._alpha_var)
 
         pf.generate_particles()
+
         pf.predict()
 
-        # rospy.sleep(1)
+        mu_z = np.array([0.1, 0.1, 0.1])
+        sig_z = np.diag([.01,.001,.1])
+
+        pf.update(mu_z, sig_z)
+
+        pf.resample()
+        print pf.Xt
+
+        rospy.sleep(1)
 
 
     def shutdown(self):
