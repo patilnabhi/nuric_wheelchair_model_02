@@ -29,19 +29,21 @@ def plot_data():
     # plt.subplot(224)
     # plt.plot(data['r_caster']-data2['x6'], 'bo')
 
-    # plt.figure(2)
-    # plt.subplot(231)
-    # plt.plot(data['x'], 'ro')
-    # plt.plot(dataEst['x3'], 'go')
+    plt.figure(2)
+    plt.subplot(231)
+    plt.plot(data['x'], 'ro')
+    plt.plot(dataEst['x3'], 'go')
+    plt.plot(dataUkf['x3'], 'bo')
 
-    # plt.subplot(232)
-    # plt.plot(data['y'], 'ro')
-    # plt.plot(dataEst['x2'], 'go')
+    plt.subplot(232)
+    plt.plot(data['y'], 'ro')
+    plt.plot(dataEst['x2'], 'go')
+    plt.plot(dataUkf['x2'], 'bo')
 
-    # plt.subplot(233)
-    # plt.plot(data['th'], 'ro')
-    # plt.plot(dataEst['x4'], 'go')
-
+    plt.subplot(233)
+    plt.plot(data['th'], 'ro')
+    plt.plot(dataEst['x4'], 'go')
+    plt.plot(dataUkf['x4'], 'bo')
 
     # plt.subplot(234)
     # plt.plot(data['x']-dataEst['x3'], 'bo')

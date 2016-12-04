@@ -11,11 +11,11 @@ class PFDemo():
 
         rospy.init_node('pf_demo')
 
-        self._num_particles = 2
-        self._dt = 0.02
+        self._num_particles = 20
+        self._dt = .1
         self._consts = [0.58, 0.19, 0.06]
-        self._motion_consts = [15.0, 5., 9.81/50., .01, .01, .2, .0, .58, .27*2, .0]
-        self._alpha_var = [.001,.001]
+        self._motion_consts = [15.0, 5., 9.81/50., .01, .1, .2, .0, .58, .27*2, .0]
+        self._alpha_var = [1.e2,1.e2]
 
         self.test_pf()
 
@@ -24,21 +24,26 @@ class PFDemo():
 
     def test_pf(self):
 
-        mu_initial = [0.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0]
-        sigma_initial = np.diag([0.1,0.1,0.1,0.1,0.1,0.1,0.1])
+        mu_initial = [0.0, 0.0, 0.5, 0.0, 0.0, np.pi, np.pi]
+        sigma_initial = np.diag([1.e-4,1.e-4,1.e-1,1.e-1,1.e-1,1.e1,1.e1])
         
         pf = PF(7, 3, mu_initial, sigma_initial, self._num_particles, self._dt, self._consts, self._motion_consts, self._alpha_var)
 
         pf.generate_particles()
 
-        pf.predict()
+        count=0
+        while count < 3:
+            pf.predict()
 
-        mu_z = np.array([0.1, 0.1, 0.1])
-        sig_z = np.diag([.01,.001,.1])
+            mu_z = np.array([0.0, -0.5, 0.0])
+            sig_z = np.diag([1.e-5,1.e-5,1.e-5])
 
-        pf.update(mu_z, sig_z)
+            pf.update(mu_z, sig_z)
 
-        pf.resample()
+            pf.resample()
+
+            count += 1
+
         print pf.Xt
 
         rospy.sleep(1)

@@ -56,7 +56,7 @@ class PF(object):
 
         temp = np.array([self.prob_zt_given_xt(zt,x[2:5],sig_z) for x in self.Xt])
         self.weights = np.reshape(np.array([np.append(np.append([1., 1.], arr), [1.,1.]) for arr in temp]), (self.dim_x, self.NUM_PARTICLES))
-
+        # print self.weights
 
 
     def resample(self):
@@ -71,7 +71,7 @@ class PF(object):
 
         sm = np.diag(sig_z)
 
-        return np.array([1./(s*np.sqrt(2*np.pi))*np.exp(-(z-x)**2./(2*s**2.)) for s,z,x in zip(sm,zt,xt)])
+        return np.array([1./(s*np.sqrt(2.*np.pi))*np.exp(-(z-x)**2./(2.*s**2.)) for s,z,x in zip(sm,zt,xt)])
 
 
     def generate_measurement(self, mu_z, sig_z):
@@ -90,16 +90,20 @@ class PF(object):
         x0 = np.array(x0)
 
         a, b, c, d, e, f, g = x0.tolist()
-        self._i = i
+        # self._i = i
+
+        self._omega1 = self.omegas(self.delta(f),self.delta(g), self.frichat, i)[0]
+        self._omega2 = self.omegas(self.delta(f),self.delta(g), self.frichat, i)[1]
+        self._omega3 = self.omegas(self.delta(f),self.delta(g), self.frichat, i)[2]
 
         def fa(a, b, c, d, e, f, g):
-            omega3 = self.omegas(self.delta(f),self.delta(g), self._i)[2]
-            return omega3/self.Iz
+            # omega3 = self.omegas(self.delta(f),self.delta(g), self._i)[2]
+            return self._omega3/self.Iz
 
         def fb(a, b, c, d, e, f, g):
-            omega1 = self.omegas(self.delta(f),self.delta(g), self._i)[0]
-            omega2 = self.omegas(self.delta(f),self.delta(g), self._i)[1]
-            return ((-omega1*np.sin(e) + omega2*np.cos(e))/self.m)
+            # omega1 = self.omegas(self.delta(f),self.delta(g), self._i)[0]
+            # omega2 = self.omegas(self.delta(f),self.delta(g), self._i)[1]
+            return ((-self._omega1*np.sin(e) + self._omega2*np.cos(e))/self.m)
 
         def fc(a, b, c, d, e, f, g):
             return b*np.sin(e)
@@ -114,23 +118,23 @@ class PF(object):
             return (a*(self.dl*np.cos(f) - (self.df*np.sin(f)/2) - self.dc)/self.dc) - (b*np.sin(f)/self.dc)
 
         def fg(a, b, c, d, e, f, g):
-            return (a*(self.dl*np.cos(g) - (self.df*np.sin(g)/2) - self.dc)/self.dc) - (b*np.sin(g)/self.dc)
+            return (a*(self.dl*np.cos(g) + (self.df*np.sin(g)/2) - self.dc)/self.dc) - (b*np.sin(g)/self.dc)
 
         return np.array(self.rK7(a, b, c, d, e, f, g, fa, fb, fc, fd, fe, ff, fg, dt))
 
 
 
-    def omegas(self, delta1, delta2, i):
+    def omegas(self, delta1, delta2, frichat, i):
 
         N = self.m*self.g
 
-        F1u = self.frichat*self.ep*N/2.
+        F1u = frichat*self.ep*N/2.
         F1w = 0.0      
-        F2u = self.frichat*self.ep*N/2.
+        F2u = frichat*self.ep*N/2.
         F2w = 0.0
-        F3u = self.frichat*(1-self.ep)*N/2.
+        F3u = frichat*(1-self.ep)*N/2.
         F3w = 0.0
-        F4u = self.frichat*(1-self.ep)*N/2.
+        F4u = frichat*(1-self.ep)*N/2.
         F4w = 0.0
 
         omega1 = (F3u*np.cos(delta1)) + (F3w*np.sin(delta1)) + F1u + F2u + (F4u*np.cos(delta2)) + (F4w*np.sin(delta2))
