@@ -24,7 +24,7 @@ class UKFWheelchair3(object):
 
         self.wheel_cmd = Twist()
 
-        self.wheel_cmd.linear.x = 0.3 
+        self.wheel_cmd.linear.x = 0.4 
         self.wheel_cmd.angular.z = 0.2
 
 
@@ -79,6 +79,12 @@ class UKFWheelchair3(object):
 
     def move_wheelchair(self):
 
+        # self.wheel_cmd.linear.x = 1.*np.random.random_sample() * -.5 
+        # self.wheel_cmd.angular.z = .6*np.random.random_sample() * -.3 
+
+        self.ini_cwo_l = 2*np.pi*np.random.random_sample() * -np.pi
+        self.ini_cwo_r = 2*np.pi*np.random.random_sample() * -np.pi
+
         while rospy.get_time() == 0.0:
             continue
         
@@ -87,6 +93,8 @@ class UKFWheelchair3(object):
 
         
         self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.odom_y, self.odom_x, self.odom_th, self.th_to_al(self.l_caster_angle), self.th_to_al(self.r_caster_angle)]
+        # self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, 0.0, 0.0, 0.0, self.ini_cwo_l, self.ini_cwo_r]
+        # self.ini_val = np.random.uniform(low=-1.0, high=1.0, size=(7,)).tolist()
 
         count = 0
 
@@ -141,8 +149,8 @@ class UKFWheelchair3(object):
         # x0 = np.reshape(x0, (1,7))
 
         kf.x = x0   # initial mean state
-        kf.Q *= np.diag([0.0001, 0.0001, 0.0001, 0.0001, 0.0001, .01, .01])
-        kf.P *= 0.0001  # kf.P = eye(dim_x) ; adjust covariances if necessary
+        kf.Q *= np.diag([.0001, .0001, .0001, .0001, .0001, .01, .01])
+        kf.P *= 0.000001  # kf.P = eye(dim_x) ; adjust covariances if necessary
         kf.R *= 0.0001
         
 
@@ -192,10 +200,20 @@ class UKFWheelchair3(object):
         np.savetxt('data_ukf.csv', np.c_[x0,x1,x2,x3,x4,x5,x6])
 
         sol = self.solve_est()
-        sol[:,2] = -sol[:,2]
         sol[:,5] = self.al_to_th(sol[:,5])
         sol[:,6] = self.al_to_th(sol[:,6])
-        np.savetxt('data_est.csv', sol)
+
+        x00 = [item for item in sol[:,0].tolist()]
+        x11 = [item for item in sol[:,1].tolist()]
+        x22 = [-item for item in sol[:,2].tolist()]
+        x33 = [item for item in sol[:,3].tolist()]
+        x44 = [normalize_angle(item) for item in sol[:,4].tolist()]
+        x55 = [normalize_angle(item) for item in sol[:,5].tolist()]
+        x66 = [normalize_angle(item) for item in sol[:,6].tolist()]
+
+
+
+        np.savetxt('data_est.csv', np.c_[x00,x11,x22,x33,x44,x55,x66])
 
     def ode2(self, x0):
 
