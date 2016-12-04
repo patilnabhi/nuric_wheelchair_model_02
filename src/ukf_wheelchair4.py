@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import rospy
-import sys
 from ukf_helper import MerweScaledSigmaPoints, SimplexSigmaPoints, JulierSigmaPoints, state_mean, meas_mean, residual_x, residual_z, normalize_angle, rKN, sub_angle
 from ukf import UKF
 from nav_msgs.msg import Odometry
@@ -15,10 +14,10 @@ import matplotlib.pyplot as plt
 from scipy.linalg import sqrtm
 
 
-class UKFWheelchair3(object):
+class UKFWheelchair4(object):
 
     def __init__(self):
-        rospy.init_node('ukf_wheelchair3')
+        rospy.init_node('ukf_wheelchair4')
 
         rospy.on_shutdown(self.shutdown)
 
@@ -388,6 +387,6 @@ class UKFWheelchair3(object):
 if __name__ == '__main__':
 
     try:
-        UKFWheelchair3()
+        UKFWheelchair4()
     except rospy.ROSInterruptException:
         pass
