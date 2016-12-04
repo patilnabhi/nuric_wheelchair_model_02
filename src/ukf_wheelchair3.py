@@ -92,8 +92,8 @@ class UKFWheelchair3(object):
         rospy.sleep(1)
 
         
-        self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.odom_y, self.odom_x, self.odom_th, self.th_to_al(self.l_caster_angle), self.th_to_al(self.r_caster_angle)]
-        # self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, 0.0, 0.0, 0.0, self.ini_cwo_l, self.ini_cwo_r]
+        # self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.odom_y, self.odom_x, self.odom_th, self.th_to_al(self.l_caster_angle), self.th_to_al(self.r_caster_angle)]
+        self.ini_val = [0.0, 0.0, 0.0, 0.0, 0.0, self.ini_cwo_l, self.ini_cwo_r]
         # self.ini_val = np.random.uniform(low=-1.0, high=1.0, size=(7,)).tolist()
 
         count = 0
