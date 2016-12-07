@@ -15,7 +15,7 @@ from ukf_helper import normalize_angle
 
 class SolveDynamicModel3:
     def __init__(self):
-        rospy.init_node('solve_dynamic_model2')
+        rospy.init_node('solve_dynamic_model3')
 
         rospy.on_shutdown(self.shutdown)
         self.wheel_cmd = Twist()

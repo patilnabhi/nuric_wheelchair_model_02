@@ -13,7 +13,6 @@ def unscented_transform(sigmas, Wm, Wc, noise_cov=None, mean_fn=None, residual_f
         y = residual_fn(sigmas[k], x)
         P += Wc[k] * np.outer(y, y)
 
-
     if noise_cov is not None:
         P += noise_cov
 

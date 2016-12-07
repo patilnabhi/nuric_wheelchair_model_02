@@ -15,9 +15,189 @@ def normalize_angle(x):
     #     x += 2*np.pi
     return x
 
-# Fourth order Runge-Kutta for n-dimensions
+def al_to_th(al):
+    return al+np.pi
+
+def th_to_al(th):
+    return th-np.pi
+
+
+def state_mean(sigmas, Wm):
+    x = np.zeros(7)
+
+    sum_sin4 = np.sum(np.dot(np.sin(sigmas[:,4]), Wm))
+    sum_cos4 = np.sum(np.dot(np.cos(sigmas[:,4]), Wm))
+    sum_sin5 = np.sum(np.dot(np.sin(sigmas[:,5]), Wm))
+    sum_cos5 = np.sum(np.dot(np.cos(sigmas[:,5]), Wm))
+    sum_sin6 = np.sum(np.dot(np.sin(sigmas[:,6]), Wm))
+    sum_cos6 = np.sum(np.dot(np.cos(sigmas[:,6]), Wm))
+
+    x[0] = np.sum(np.dot(sigmas[:, 0], Wm))
+    x[1] = np.sum(np.dot(sigmas[:, 1], Wm))
+    x[2] = np.sum(np.dot(sigmas[:, 2], Wm))
+    x[3] = np.sum(np.dot(sigmas[:, 3], Wm))
+    x[4] = np.arctan2(sum_sin4, sum_cos4)
+    x[5] = np.arctan2(sum_sin5, sum_cos5)
+    x[6] = np.arctan2(sum_sin6, sum_cos6)
+
+    return x
+
+def meas_mean(sigmas, Wm):
+    z = np.zeros(3)
+
+    z[0] = np.sum(np.dot(sigmas[:, 0], Wm))
+    z[1] = np.sum(np.dot(sigmas[:, 1], Wm))
+
+    sum_sin = np.sum(np.dot(np.sin(sigmas[:,2]), Wm))
+    sum_cos = np.sum(np.dot(np.cos(sigmas[:,2]), Wm))
+
+    z[2] = np.arctan2(sum_sin, sum_cos)
+
+    return z
+
+def residual_x(a, b):
+    y = a - b
+
+    y[4], y[5], y[6] = normalize_angle(y[4]), normalize_angle(y[5]), normalize_angle(y[6])
+
+    return y 
+
+def residual_z(a, b):
+    y = a - b
+
+    y[2] = normalize_angle(y[2])
+
+    return y
+
+
+# Fourth order Runge-Kutta for 2-dimensions (faster by factor of 3)
 # hs = time-step
 # (http://www.codeproject.com/Tips/792927/Fourth-Order-Runge-Kutta-Method-in-Python)
+
+def rK2(a, b, fa, fb, hs):
+
+    a1 = fa(a, b)*hs
+    b1 = fb(a, b)*hs
+
+    ak = a + a1*0.5
+    bk = b + b2*0.5
+
+    a2 = fa(ak, bk)*hs
+    b2 = fb(ak, bk)*hs
+
+    ak = a + a2*0.5
+    bk = b + b2*0.5
+
+    a3 = fa(ak, bk)*hs
+    b3 = fb(ak, bk)*hs
+
+    ak = a + a3
+    bk = b + b3
+
+    a4 = fa(ak, bk)*hs
+    b4 = fb(ak, bk)*hs
+
+    a = a + (a1 + 2*(a2+a3) + a4)/6
+    b = b + (b1 + 2*(b2+b3) + b4)/6
+
+    return [a, b]
+
+# Fourth order Runge-Kutta for 7-dimensions (faster by factor of 3)
+# hs = time-step
+# (http://www.codeproject.com/Tips/792927/Fourth-Order-Runge-Kutta-Method-in-Python)
+
+def rK7(self, a, b, c, d, e, f, g, fa, fb, fc, fd, fe, ff, fg, hs):
+
+    a1 = fa(a, b, c, d, e, f, g)*hs
+    b1 = fb(a, b, c, d, e, f, g)*hs
+    c1 = fc(a, b, c, d, e, f, g)*hs
+    d1 = fd(a, b, c, d, e, f, g)*hs
+    e1 = fe(a, b, c, d, e, f, g)*hs
+    f1 = ff(a, b, c, d, e, f, g)*hs
+    g1 = fg(a, b, c, d, e, f, g)*hs
+
+    ak = a + a1*0.5
+    bk = b + b1*0.5
+    ck = c + c1*0.5
+    dk = d + d1*0.5
+    ek = e + e1*0.5
+    fk = f + f1*0.5
+    gk = g + g1*0.5
+
+    a2 = fa(ak, bk, ck, dk, ek, fk, gk)*hs
+    b2 = fb(ak, bk, ck, dk, ek, fk, gk)*hs
+    c2 = fc(ak, bk, ck, dk, ek, fk, gk)*hs
+    d2 = fd(ak, bk, ck, dk, ek, fk, gk)*hs
+    e2 = fe(ak, bk, ck, dk, ek, fk, gk)*hs
+    f2 = ff(ak, bk, ck, dk, ek, fk, gk)*hs
+    g2 = fg(ak, bk, ck, dk, ek, fk, gk)*hs
+
+    ak = a + a2*0.5
+    bk = b + b2*0.5
+    ck = c + c2*0.5
+    dk = d + d2*0.5
+    ek = e + e2*0.5
+    fk = f + f2*0.5
+    gk = g + g2*0.5
+
+    a3 = fa(ak, bk, ck, dk, ek, fk, gk)*hs
+    b3 = fb(ak, bk, ck, dk, ek, fk, gk)*hs
+    c3 = fc(ak, bk, ck, dk, ek, fk, gk)*hs
+    d3 = fd(ak, bk, ck, dk, ek, fk, gk)*hs
+    e3 = fe(ak, bk, ck, dk, ek, fk, gk)*hs
+    f3 = ff(ak, bk, ck, dk, ek, fk, gk)*hs
+    g3 = fg(ak, bk, ck, dk, ek, fk, gk)*hs
+
+    ak = a + a3
+    bk = b + b3
+    ck = c + c3
+    dk = d + d3
+    ek = e + e3
+    fk = f + f3
+    gk = g + g3
+
+    a4 = fa(ak, bk, ck, dk, ek, fk, gk)*hs
+    b4 = fb(ak, bk, ck, dk, ek, fk, gk)*hs
+    c4 = fc(ak, bk, ck, dk, ek, fk, gk)*hs
+    d4 = fd(ak, bk, ck, dk, ek, fk, gk)*hs
+    e4 = fe(ak, bk, ck, dk, ek, fk, gk)*hs
+    f4 = ff(ak, bk, ck, dk, ek, fk, gk)*hs
+    g4 = fg(ak, bk, ck, dk, ek, fk, gk)*hs
+
+    a = a + (a1 + 2*(a2 + a3) + a4)/6
+    b = b + (b1 + 2*(b2 + b3) + b4)/6
+    c = c + (c1 + 2*(c2 + c3) + c4)/6
+    d = d + (d1 + 2*(d2 + d3) + d4)/6
+    e = e + (e1 + 2*(e2 + e3) + e4)/6
+    f = f + (f1 + 2*(f2 + f3) + f4)/6
+    g = g + (g1 + 2*(g2 + g3) + g4)/6
+
+    return [a, b, c, d, e, f, g]
+
+
+def rKN(x, fx, n, hs):
+    k1 = []
+    k2 = []
+    k3 = []
+    k4 = []
+    xk = []
+    for i in range(n):
+        k1.append(fx[i](x)*hs)
+    for i in range(n):
+        xk.append(x[i] + k1[i]*0.5)
+    for i in range(n):
+        k2.append(fx[i](xk)*hs)
+    for i in range(n):
+        xk[i] = x[i] + k2[i]*0.5
+    for i in range(n):
+        k3.append(fx[i](xk)*hs)
+    for i in range(n):
+        xk[i] = x[i] + k3[i]
+    for i in range(n):
+        k4.append(fx[i](xk)*hs)
+    for i in range(n):
+        x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6
+    return x
 
 class JulierSigmaPoints(object):
 
@@ -266,143 +446,7 @@ class SimplexSigmaPoints(object):
         W = np.full(n + 1, c)
 
         return W, W
-
-def rKN(x, fx, n, hs):
-    k1 = []
-    k2 = []
-    k3 = []
-    k4 = []
-    xk = []
-    for i in range(n):
-        k1.append(fx[i](x)*hs)
-    for i in range(n):
-        xk.append(x[i] + k1[i]*0.5)
-    for i in range(n):
-        k2.append(fx[i](xk)*hs)
-    for i in range(n):
-        xk[i] = x[i] + k2[i]*0.5
-    for i in range(n):
-        k3.append(fx[i](xk)*hs)
-    for i in range(n):
-        xk[i] = x[i] + k3[i]
-    for i in range(n):
-        k4.append(fx[i](xk)*hs)
-    for i in range(n):
-        x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6
-    return x
-
-
-
-# Fourth order Runge-Kutta for 3-dimensions (faster by factor of 3)
-# hs = time-step
-# (http://www.codeproject.com/Tips/792927/Fourth-Order-Runge-Kutta-Method-in-Python)
-
-def rK3(a, b, c, fa, fb, fc, hs):
-    a1 = fa(a, b, c)*hs
-    b1 = fb(a, b, c)*hs
-    c1 = fc(a, b, c)*hs
-    ak = a + a1*0.5
-    bk = b + b1*0.5
-    ck = c + c1*0.5
-    a2 = fa(ak, bk, ck)*hs
-    b2 = fb(ak, bk, ck)*hs
-    c2 = fc(ak, bk, ck)*hs
-    ak = a + a2*0.5
-    bk = b + b2*0.5
-    ck = c + c2*0.5
-    a3 = fa(ak, bk, ck)*hs
-    b3 = fb(ak, bk, ck)*hs
-    c3 = fc(ak, bk, ck)*hs
-    ak = a + a3
-    bk = b + b3
-    ck = c + c3
-    a4 = fa(ak, bk, ck)*hs
-    b4 = fb(ak, bk, ck)*hs
-    c4 = fc(ak, bk, ck)*hs
-    a = a + (a1 + 2*(a2 + a3) + a4)/6
-    b = b + (b1 + 2*(b2 + b3) + b4)/6
-    c = c + (c1 + 2*(c2 + c3) + c4)/6
-    return a, b, c
-
-def state_mean(sigmas, Wm):
-    x = np.zeros(7)
-
-    sum_sin1, sum_cos1 = 0., 0.
-    sum_sin2, sum_cos2 = 0., 0.
-    sum_sin3, sum_cos3 = 0., 0.
-
-    for i in range(len(sigmas)):
-        s = sigmas[i]
-        x[0] += s[0] * Wm[i]
-        x[1] += s[1] * Wm[i]
-        x[2] += s[2] * Wm[i]
-        x[3] += s[3] * Wm[i]        
-
-        sum_sin1 += np.sin(s[4])*Wm[i]
-        sum_cos1 += np.cos(s[4])*Wm[i]
-
-        sum_sin2 += np.sin(s[5])*Wm[i]
-        sum_cos2 += np.cos(s[5])*Wm[i]
-
-        sum_sin3 += np.sin(s[6])*Wm[i]
-        sum_cos3 += np.cos(s[6])*Wm[i]
-
-        # x[5] += s[5] * Wm[i]
-        # x[6] += s[6] * Wm[i]
-
-    x[4] = np.arctan2(sum_sin1, sum_cos1)
-    x[5] = np.arctan2(sum_sin2, sum_cos2)
-    x[6] = np.arctan2(sum_sin3, sum_cos3)
-
-    return x
-
-def meas_mean(sigmas, Wm):
-    z = np.zeros(3)
-
-    sum_sin1, sum_cos1 = 0., 0.
-    
-
-    for i in range(len(sigmas)):
-        s = sigmas[i]
-        z[0] += s[0] * Wm[i]
-        z[1] += s[1] * Wm[i]
-                
-
-        sum_sin1 += np.sin(s[2])*Wm[i]
-        sum_cos1 += np.cos(s[2])*Wm[i]
-
         
-
-    z[2] = np.arctan2(sum_sin1, sum_cos1)
-
-    return z
-
-def residual_x(a, b):
-    y = np.zeros(7)
-    
-    for i in xrange(len(a)):
-        y[:4] = a[:4] - b[:4]
-        y[4] = sub_angle(a[4] - b[4])
-        y[5] = sub_angle(a[5] - b[5])
-        y[6] = sub_angle(a[6] - b[6])
-
-    return y
-
-def residual_z(a, b):
-    y = np.zeros(3)
-    
-    for i in xrange(len(a)):
-        y[:2] = a[:2] - b[:2]
-        y[2] = sub_angle(a[2] - b[2])
-        
-    return y
-
-def sub_angle(angle):
-    if angle > np.pi:
-        angle -= np.pi
-    if angle < -np.pi:
-        angle += np.pi
-    return angle
 
 class MerweScaledSigmaPoints(object):
 
