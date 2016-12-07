@@ -16,7 +16,7 @@
 
 * This documentation explains the code structure and address the following 2 topics -
 
-A. 3D model of new wheelchair
+#####A. 3D model of new wheelchair
 
 * The relevant files are present in 2 main directories - `urdf` and `meshes` 
 
@@ -30,6 +30,6 @@ A. 3D model of new wheelchair
 * Raw SolidWorks files (.SLDPRT & .SLDASM) are available in the `3d_model_sw` directory
 
 
-B. UKF implementation for estimation of CWOs
+#####B. UKF implementation for estimation of CWOs
 
 
