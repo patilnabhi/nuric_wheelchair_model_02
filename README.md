@@ -18,18 +18,34 @@
 
 #####A. 3D model of new wheelchair
 
-* The relevant files are present in 2 main directories - `urdf` and `meshes` 
+* The relevant files are present in 2 main directories, namely  `urdf` and `meshes`
 
 * `urdf` : This directory contains the `xacro` files required to build the 3D model in simulation.
 * Main highlights -
 	* `joint_states` are published using the `gazebo_ros_control` plugin (particularly, `libgazebo_ros_joint_state_publisher.so` plugin)
 	* The differential drive controller uses the `libgazebo_ros_diff_drive.so` plugin
 	* The hokuyo laser controller uses `libgazebo_ros_laser.so` plugin to gather laser-scan data
-	* The kinect camera controller uses `libgazebo_ros_openni_kinect.so` plugin to generate `rgb` and depth data
+	* The kinect camera controller uses `libgazebo_ros_openni_kinect.so` plugin to generate `rgb` and `depth` data
 
-* Raw SolidWorks files (.SLDPRT & .SLDASM) are available in the `3d_model_sw` directory
+* `meshes` directory contain the collada `.dae` files of the wheelchair
+
+* Raw SolidWorks files `.SLDPRT & .SLDASM` are available in the `3d_model_sw` directory
+	* Blender software is used to convert the `.SLDPRT & .SLDASM` files into collada `.dae` files for URDF compatibility
 
 
 #####B. UKF implementation for estimation of CWOs
+
+```
+
+def func(a, b):
+	
+	return b
+
+```
+
+
+
+
+http://stackoverflow.com/questions/11256433/how-to-show-math-equations-in-general-githubs-markdownnot-githubs-blog
 
 
