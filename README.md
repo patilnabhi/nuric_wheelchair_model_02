@@ -35,17 +35,10 @@
 
 #####B. UKF implementation for estimation of CWOs
 
-```
-
-def func(a, b):
-	
-	return b
-
-```
 
 
 
 
-http://stackoverflow.com/questions/11256433/how-to-show-math-equations-in-general-githubs-markdownnot-githubs-blog
+
 
 
