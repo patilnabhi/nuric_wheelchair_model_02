@@ -1,9 +1,9 @@
-## Smart Wheelchair - Estimator for Caster Wheel Orientation (Project in development)
+## Smart Wheelchair
 
 #### Goal:
-* Implement an Unscented Kalman FIlter (UKF) algorithm for accurate estimation of Caster Wheel Orientations (CWOs) and pose of a robotic wheelchair 
-* Mentor: Prof. Brenna Argall
-* Project is based in the assistive & rehabilitation robotics laboratory (argallab) located within the Rehabilitation Institute of Chicago (RIC)
+* Implement an Unscented Kalman Filter (UKF) algorithm for accurate estimation of Caster Wheel Orientations (CWOs) and pose of a [robotic wheelchair]
+* Mentor: [Prof. Brenna Argall]
+* Project is based in the [assistive & rehabilitation robotics laboratory (argallab)] located within the [Rehabilitation Institute of Chicago (RIC)]
 
 #### Project Objectives:
 
@@ -18,7 +18,7 @@
 
 #####A. 3D model of new wheelchair
 
-* The relevant files are present in 2 main directories, namely  `urdf` and `meshes`
+* The relevant files are present in 2 main directories, namely  `[urdf]` and `[meshes]`
 
 * `urdf` : This directory contains the `xacro` files required to build the 3D model in simulation.
 * Main highlights -
@@ -29,8 +29,8 @@
 
 * `meshes` directory contain the collada `.dae` files of the wheelchair
 
-* Raw SolidWorks files `.SLDPRT & .SLDASM` are available in the `3d_model_sw` directory
-	* Blender software is used to convert the `.SLDPRT & .SLDASM` files into collada `.dae` files for URDF compatibility
+* Raw SolidWorks files `.SLDPRT & .SLDASM` are available in the `[3d_model_sw]` directory
+	* [Blender] software is used to convert the `.SLDPRT & .SLDASM` files into collada `.dae` files for URDF compatibility
 
 
 #####B. UKF implementation for estimation of CWOs
@@ -41,8 +41,8 @@
 		* Initialize state and controls for the wheelchair (mean and covariance)
 
 	(b) Predict:
-		* Generate sigma points using Julier’s Scaled Sigma Point algorithm
-		* Pass each sigma points through the dynamic motion model to from a new prior
+		* Generate sigma points using [Julier’s Scaled Sigma Point] algorithm
+		* Pass each sigma points through the dynamic motion model to form a new prior
 		* Determine mean and covariance of new prior through unscented transform
 
 	(c) Update:
@@ -72,7 +72,7 @@
 
 		```
 
-	* Next, we create sigma points using the [Julier Scaled Sigma Point algorithm]. ([JulierSigmaPoints])
+	* Next, we create sigma points using the Julier Scaled Sigma Point algorithm. ([JulierSigmaPoints])
 
 
 		```
@@ -167,7 +167,7 @@
 		        self.P = self.P - dot3(self.K, Pz, self.K.T)
 		```
 
-	* The above functions from UKF class are imported in the main file `ukf_wheelchair.py` and implemented as follows -
+	* The above functions from UKF class are imported in the main file `[ukf_wheelchair.py]` and implemented as follows -
 
 		```
 		kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
@@ -199,3 +199,19 @@
 
 
 
+[robotic wheelchair]:http://argallab.smpp.northwestern.edu/index.php/research/robot-platforms/smart-wheelchair/
+[Prof. Brenna Argall]:http://users.eecs.northwestern.edu/~argall/
+[assistive & rehabilitation robotics laboratory (argallab)]:http://argallab.smpp.northwestern.edu/
+[Rehabilitation Institute of Chicago (RIC)]:http://www.ric.org/
+[urdf]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/urdf
+[meshes]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/meshes
+[3d_model_sw]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/3d_model_sw
+[Blender]:https://www.blender.org/
+[Julier’s Scaled Sigma Point]:http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=1025369
+[ode2]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_wheelchair.py#L192-L227
+[rK7]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_helper.py#L109-L175
+[JulierSigmaPoints]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_helper.py#L202-L332
+[UKF]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L10-L101
+[predict]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L53-L68
+[update]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L72-L101
+[ukf_wheelchair.py]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_wheelchair.py
