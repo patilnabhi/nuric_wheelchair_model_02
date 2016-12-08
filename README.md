@@ -35,10 +35,73 @@
 
 #####B. UKF implementation for estimation of CWOs
 
+* The UKF algorithm implementation consists of 3 main steps, as outlined below –
+
+	(a) Initialize:
+		* Initialize state and controls for the wheelchair (mean and covariance)
+
+	(b) Predict:
+		* Generate sigma points using Julier’s Scaled Sigma Point algorithm
+		* Pass each sigma points through the dynamic motion model to from a new prior
+		* Determine mean and covariance of new prior through unscented transform
+
+	(c) Update:
+		* Get odometry data (measurement of pose of wheelchair)
+		* Convert the sigma points of prior into expected measurements (points corresponding to pose of wheelchair – x, y  and \theta  are chosen)
+		* Compute mean and covariance of converted sigma points through unscented transform
+		* Compute residual and Kalman gain
+		* Determine new estimate for the state with new covariance
 
 
+* A skeleton version of the UKF code (Python) is produced below (Click on functions to look at its complete implementation): 
+
+```
+
+```
+Comments
+
+```
+
+def fx(x, dt):
+	
+	sol = self.ode2(x)
+	return np.array(sol)
+
+def hx(x):
+
+	return np.array([x[3], x[2], normalize_angle(x[4])])
+
+points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
+
+kf = UKF(dim_x=7, dim_z=3, dt=self.dt, fx=fx, hx=hx, points=points, 
+			sqrt_fn=None, x_mean_fn=self.state_mean, z_mean_fn=self.meas_mean, 
+			residual_x=self.residual_x, residual_z=self.residual_z)
+
+x0 = np.array(self.ini_val)
+
+kf.x = x0
+kf.Q *= np.diag([.0001, .0001, .0001, .0001, .0001, .01, .01])
+kf.P *= 0.000001
+kf.R *= 0.0001
+
+move_time = 4.0
+start = rospy.get_time()
+
+while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():
+	
+	pub_twist.publish(wheel_cmd)
+
+	z = np.array([odom_x, odom_y, odom_theta])
+	zs.append(z)
+
+	kf.predict()
+	kf.update(z)
+
+	xs.append(kf.x)
+
+```
 
 
-
+http://stackoverflow.com/questions/11256433/how-to-show-math-equations-in-general-githubs-markdownnot-githubs-blog
 
 
