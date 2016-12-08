@@ -56,9 +56,12 @@
 * A skeleton version of the UKF code (Python) is produced below (Click on functions to look at its complete implementation): 
 
 ```
+'''
+Comments
+'''
 
 def fx(x, dt):	
-	sol = self.ode2(x)
+	sol = ode2(x)
 	return np.array(sol)
 
 def hx(x):
@@ -66,9 +69,9 @@ def hx(x):
 
 points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
 
-kf = UKF(dim_x=7, dim_z=3, dt=self.dt, fx=fx, hx=hx, points=points, 
-			sqrt_fn=None, x_mean_fn=self.state_mean, z_mean_fn=self.meas_mean, 
-			residual_x=self.residual_x, residual_z=self.residual_z)
+kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
+			sqrt_fn=None, x_mean_fn=state_mean, z_mean_fn=meas_mean, 
+			residual_x, residual_z)
 
 x0 = np.array(self.ini_val)
 
