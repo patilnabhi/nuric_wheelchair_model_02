@@ -51,7 +51,7 @@
 	(c) **Update:**
 
 	* Get odometry data (measurement of pose of wheelchair)
-	* Convert the sigma points of prior into expected measurements (points corresponding to pose of wheelchair – x, y  and \theta  are chosen)
+	* Convert the sigma points of prior into expected measurements (points corresponding to pose of wheelchair – x, y  and theta  are chosen)
 	* Compute mean and covariance of converted sigma points through unscented transform
 	* Compute residual and Kalman gain
 	* Determine new estimate for the state with new covariance
