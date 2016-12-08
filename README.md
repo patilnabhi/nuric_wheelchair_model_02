@@ -59,7 +59,7 @@
 	* The dynamic motion model is implemented using 4th-order Runge-Kutta method ([ode2], [rK7])
 	* Measurement data for this implementation comes from wheelchair's odometry - hence, the measurement function returns the 3rd, 4th and 5th elements representing x, y and theta (pose of wheelchair)
 	
-	
+
 	```
 	import numpy as np
 
@@ -80,15 +80,13 @@
 	```
 
 	* The `[UKF]` class incorporates the UKF algorithm as follows -
-	* `[__init__]` function initializes the variables 
+	
 
 	```
 	class UKF(object):
 
 	    def __init__(self, dim_x, dim_z, dt, hx, fx, points, sqrt_fn=None, 
-	    				x_mean_fn=None, z_mean_fn=None, residual_z=None, residual_z=None):
-
-	        
+	    				x_mean_fn=None, z_mean_fn=None, residual_z=None, residual_z=None):    
 	``` 
 
 	* `[predict]` function passes each of the sigma points through `fx` and calculate new set of sigma points
@@ -129,9 +127,12 @@
 		        P += noise_cov
 
 		    return (x, P)
-
     ```
 
+    * The `[update]` function first generates sigma points from expected measurement data
+    * The measurement mean (zp) and covariance (Pz) is obtaine via unscented transform of the above generated sigma points
+    * Next, the Kalman gain (K) and residual gain (y) is calculated 
+    * Finally, the new mean (x) and covariance (P) is obtained, given K and y
 
     ```
 	    def update(self, z, R=None, UT=None, hx_args=()):
@@ -166,6 +167,9 @@
 	        self.P = self.P - dot3(self.K, Pz, self.K.T)
 	```
 
+	* The above functions from UKF class are imported in the main file `ukf_wheelchair.py` and implemented as follows -
+
+	```
 	kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
 				sqrt_fn=None, x_mean_fn=state_mean, z_mean_fn=meas_mean, 
 				residual_x, residual_z)
@@ -190,7 +194,6 @@
 		kf.update(z)
 
 		xs.append(kf.x)
-
 	```
 
 
