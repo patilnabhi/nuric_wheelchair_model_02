@@ -55,9 +55,14 @@
 
 * The UKF code (Python) is produced below (Click on functions to look at its complete implementation): 
 
-* One
+	* Frist, we create a function to represent dynamic motion model `f(x)` and the measurement function `h(x)`
+	* The dynamic motion model is implemented using 4th-order Runge-Kutta method ([ode2], [rK7])
+	* Measurement data for this implementation comes from wheelchair's odometry - hence, the measurement function returns the 3rd, 4th and 5th elements representing x, y and theta (pose of wheelchair)
 
 	```
+
+	import numpy as np
+
 	def fx(x, dt):	
 		sol = ode2(x)
 		return np.array(sol)
@@ -67,35 +72,125 @@
 
 	```
 
-```
-points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
+	* Next, we create sigma points using the [Julier Scaled Sigma Point algorithm]. ([JulierSigmaPoints])
 
-kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
-			sqrt_fn=None, x_mean_fn=state_mean, z_mean_fn=meas_mean, 
-			residual_x, residual_z)
+	```
+	points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
+	```
 
-x0 = np.array(self.ini_val)
+	* The `[UKF]` class incorporates the UKF algorithm as follows -
+	* `[__init__]` function initializes the variables 
 
-kf.x = x0
-kf.Q *= np.diag([.0001, .0001, .0001, .0001, .0001, .01, .01])
-kf.P *= 0.000001
-kf.R *= 0.0001
+	```
+	class UKF(object):
 
-move_time = 4.0
-start = rospy.get_time()
+	    def __init__(self, dim_x, dim_z, dt, hx, fx, points, sqrt_fn=None, 
+	    				x_mean_fn=None, z_mean_fn=None, residual_z=None, residual_z=None):
 
-while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():	
-	pub_twist.publish(wheel_cmd)
+	        
+	``` 
 
-	z = np.array([odom_x, odom_y, odom_theta])
-	zs.append(z)
+	* `[predict]` function passes each of the sigma points through `fx` and calculate new set of sigma points
+	* The mean (x) and covariance (P) are obtained via unscented transform as shown below -
 
-	kf.predict()
-	kf.update(z)
+	```
+	    def predict(self, UT=None, fx_args=()):
 
-	xs.append(kf.x)
+	        dt = self._dt
 
-```
+	        if not isinstance(fx_args, tuple):
+	            fx_args = (fx_args,)
+
+	        if UT is None:
+	            UT = unscented_transform
+
+	        sigmas = self.points_fn.sigma_points(self.x, self.P)
+
+	        for i in xrange(self._num_sigmas):
+	            self.sigmas_f[i] = self.fx(sigmas[i], dt, *fx_args)
+	        
+	        self.x, self.P = UT(self.sigmas_f, self.Wm, self.Wc, self.Q, self.x_mean, self.residual_x)
+	        # print self.x
+
+
+        def unscented_transform(sigmas, Wm, Wc, noise_cov=None, mean_fn=None, residual_fn=None):
+
+		    kmax, n = sigmas.shape
+
+		    x = mean_fn(sigmas, Wm)
+
+		    P = np.zeros((n,n))
+		    for k in xrange(kmax):
+		        y = residual_fn(sigmas[k], x)
+		        P += Wc[k] * np.outer(y, y)
+
+		    if noise_cov is not None:
+		        P += noise_cov
+
+		    return (x, P)
+
+    ```
+
+
+    ```
+	    def update(self, z, R=None, UT=None, hx_args=()):
+
+	        if z is None:
+	            return
+
+	        if not isinstance(hx_args, tuple):
+	            hx_args = (hx_args,)
+
+	        if UT is None:
+	            UT = unscented_transform
+
+	        R = self.R
+
+	        for i in xrange(self._num_sigmas):
+	            self.sigmas_h[i] = self.hx(self.sigmas_f[i], *hx_args)
+
+	        zp, Pz = UT(self.sigmas_h, self.Wm, self.Wc, R, self.z_mean, self.residual_z)
+
+	        Pxz = zeros((self._dim_x, self._dim_z))
+	        for i in xrange(self._num_sigmas):
+	            dx = self.residual_x(self.sigmas_f[i], self.x)
+	            dz = self.residual_z(self.sigmas_h[i], zp)
+	            Pxz += self.Wc[i] * outer(dx, dz)
+
+
+	        self.K = dot(Pxz, inv(Pz))
+	        self.y = self.residual_z(z, zp)
+
+	        self.x = self.x + dot(self.K, self.y)
+	        self.P = self.P - dot3(self.K, Pz, self.K.T)
+	```
+
+	kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
+				sqrt_fn=None, x_mean_fn=state_mean, z_mean_fn=meas_mean, 
+				residual_x, residual_z)
+
+	x0 = np.array(self.ini_val)
+
+	kf.x = x0
+	kf.Q *= np.diag([.0001, .0001, .0001, .0001, .0001, .01, .01])
+	kf.P *= 0.000001
+	kf.R *= 0.0001
+
+	move_time = 4.0
+	start = rospy.get_time()
+
+	while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():	
+		pub_twist.publish(wheel_cmd)
+
+		z = np.array([odom_x, odom_y, odom_theta])
+		zs.append(z)
+
+		kf.predict()
+		kf.update(z)
+
+		xs.append(kf.x)
+
+	```
 
 
 
