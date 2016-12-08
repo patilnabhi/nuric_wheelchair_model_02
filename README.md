@@ -29,7 +29,7 @@
 
 * `meshes` directory contain the collada `.dae` files of the wheelchair
 
-* Raw SolidWorks files `.SLDPRT & .SLDASM` are available in the `[3d_model_sw]` directory
+* Raw SolidWorks files `.SLDPRT & .SLDASM` are available in the [`3d_model_sw`] directory
 	* [Blender] software is used to convert the `.SLDPRT & .SLDASM` files into collada `.dae` files for URDF compatibility
 
 
