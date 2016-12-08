@@ -57,7 +57,7 @@
 
 ```
 
-def [fx(x, dt)]:
+def fx(x, dt):
 	
 	sol = self.ode2(x)
 	return np.array(sol)
@@ -97,6 +97,6 @@ while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():
 ```
 
 
-[fx(x, dt)]: http://stackoverflow.com/questions/11256433/how-to-show-math-equations-in-general-githubs-markdownnot-githubs-blog
+http://stackoverflow.com/questions/11256433/how-to-show-math-equations-in-general-githubs-markdownnot-githubs-blog
 
 
