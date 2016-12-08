@@ -40,21 +40,21 @@
 
 	(a) **Initialize:**
 
-		* Initialize state and controls for the wheelchair (mean and covariance)
+	* Initialize state and controls for the wheelchair (mean and covariance)
 
 	(b) **Predict:**
 
-		* Generate sigma points using [Julier’s Scaled Sigma Point] algorithm
-		* Pass each sigma points through the dynamic motion model to form a new prior
-		* Determine mean and covariance of new prior through unscented transform
+	* Generate sigma points using [Julier’s Scaled Sigma Point] algorithm
+	* Pass each sigma points through the dynamic motion model to form a new prior
+	* Determine mean and covariance of new prior through unscented transform
 
 	(c) **Update:**
 
-		* Get odometry data (measurement of pose of wheelchair)
-		* Convert the sigma points of prior into expected measurements (points corresponding to pose of wheelchair – x, y  and \theta  are chosen)
-		* Compute mean and covariance of converted sigma points through unscented transform
-		* Compute residual and Kalman gain
-		* Determine new estimate for the state with new covariance
+	* Get odometry data (measurement of pose of wheelchair)
+	* Convert the sigma points of prior into expected measurements (points corresponding to pose of wheelchair – x, y  and \theta  are chosen)
+	* Compute mean and covariance of converted sigma points through unscented transform
+	* Compute residual and Kalman gain
+	* Determine new estimate for the state with new covariance
 
 
 * The UKF code (Python) is produced below (Click on functions to look at its complete implementation): 
