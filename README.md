@@ -53,13 +53,9 @@
 		* Determine new estimate for the state with new covariance
 
 
-* A skeleton version of the UKF code (Python) is produced below (Click on functions to look at its complete implementation): 
+* The UKF code (Python) is produced below (Click on functions to look at its complete implementation): 
 
 ```
-'''
-Comments
-'''
-
 def fx(x, dt):	
 	sol = ode2(x)
 	return np.array(sol)
@@ -67,6 +63,9 @@ def fx(x, dt):
 def hx(x):
 	return np.array([x[3], x[2], normalize_angle(x[4])])
 
+```
+
+```
 points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
 
 kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
