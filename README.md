@@ -18,7 +18,7 @@
 
 #####A. 3D model of new wheelchair
 
-* The relevant files are present in 2 main directories, namely  `[urdf]` and `[meshes]`
+* The relevant files are present in 2 main directories, namely  [`urdf`] and `[meshes]`
 
 * `urdf` : This directory contains the `xacro` files required to build the 3D model in simulation.
 * Main highlights -
@@ -203,7 +203,7 @@
 [Prof. Brenna Argall]:http://users.eecs.northwestern.edu/~argall/
 [assistive & rehabilitation robotics laboratory (argallab)]:http://argallab.smpp.northwestern.edu/
 [Rehabilitation Institute of Chicago (RIC)]:http://www.ric.org/
-[urdf]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/urdf
+[`urdf`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/urdf
 [meshes]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/meshes
 [3d_model_sw]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/3d_model_sw
 [Blender]:https://www.blender.org/
