@@ -60,141 +60,141 @@
 	* Measurement data for this implementation comes from wheelchair's odometry - hence, the measurement function returns the 3rd, 4th and 5th elements representing x, y and theta (pose of wheelchair)
 	
 
-	```
-	import numpy as np
+		```
+		import numpy as np
 
-	def fx(x, dt):	
-		sol = ode2(x)
-		return np.array(sol)
+		def fx(x, dt):	
+			sol = ode2(x)
+			return np.array(sol)
 
-	def hx(x):
-		return np.array([x[3], x[2], normalize_angle(x[4])])
+		def hx(x):
+			return np.array([x[3], x[2], normalize_angle(x[4])])
 
-	```
+		```
 
 	* Next, we create sigma points using the [Julier Scaled Sigma Point algorithm]. ([JulierSigmaPoints])
 
 
-	```
-	points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
-	```
+		```
+		points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
+		```
 
 	* The `[UKF]` class incorporates the UKF algorithm as follows -
 	
 
-	```
-	class UKF(object):
+		```
+		class UKF(object):
 
-	    def __init__(self, dim_x, dim_z, dt, hx, fx, points, sqrt_fn=None, 
-	    				x_mean_fn=None, z_mean_fn=None, residual_z=None, residual_z=None):    
-	``` 
+		    def __init__(self, dim_x, dim_z, dt, hx, fx, points, sqrt_fn=None, 
+		    				x_mean_fn=None, z_mean_fn=None, residual_z=None, residual_z=None):    
+		``` 
 
 	* `[predict]` function passes each of the sigma points through `fx` and calculate new set of sigma points
 	* The mean (x) and covariance (P) are obtained via unscented transform as shown below -
 
-	```
-	    def predict(self, UT=None, fx_args=()):
+		```
+		    def predict(self, UT=None, fx_args=()):
 
-	        dt = self._dt
+		        dt = self._dt
 
-	        if not isinstance(fx_args, tuple):
-	            fx_args = (fx_args,)
+		        if not isinstance(fx_args, tuple):
+		            fx_args = (fx_args,)
 
-	        if UT is None:
-	            UT = unscented_transform
+		        if UT is None:
+		            UT = unscented_transform
 
-	        sigmas = self.points_fn.sigma_points(self.x, self.P)
+		        sigmas = self.points_fn.sigma_points(self.x, self.P)
 
-	        for i in xrange(self._num_sigmas):
-	            self.sigmas_f[i] = self.fx(sigmas[i], dt, *fx_args)
-	        
-	        self.x, self.P = UT(self.sigmas_f, self.Wm, self.Wc, self.Q, self.x_mean, self.residual_x)
-	        # print self.x
-
-
-        def unscented_transform(sigmas, Wm, Wc, noise_cov=None, mean_fn=None, residual_fn=None):
-
-		    kmax, n = sigmas.shape
-
-		    x = mean_fn(sigmas, Wm)
-
-		    P = np.zeros((n,n))
-		    for k in xrange(kmax):
-		        y = residual_fn(sigmas[k], x)
-		        P += Wc[k] * np.outer(y, y)
-
-		    if noise_cov is not None:
-		        P += noise_cov
-
-		    return (x, P)
-    ```
-
-    * The `[update]` function first generates sigma points from expected measurement data
-    * The measurement mean (zp) and covariance (Pz) is obtaine via unscented transform of the above generated sigma points
-    * Next, the Kalman gain (K) and residual gain (y) is calculated 
-    * Finally, the new mean (x) and covariance (P) is obtained, given K and y
-
-    ```
-	    def update(self, z, R=None, UT=None, hx_args=()):
-
-	        if z is None:
-	            return
-
-	        if not isinstance(hx_args, tuple):
-	            hx_args = (hx_args,)
-
-	        if UT is None:
-	            UT = unscented_transform
-
-	        R = self.R
-
-	        for i in xrange(self._num_sigmas):
-	            self.sigmas_h[i] = self.hx(self.sigmas_f[i], *hx_args)
-
-	        zp, Pz = UT(self.sigmas_h, self.Wm, self.Wc, R, self.z_mean, self.residual_z)
-
-	        Pxz = zeros((self._dim_x, self._dim_z))
-	        for i in xrange(self._num_sigmas):
-	            dx = self.residual_x(self.sigmas_f[i], self.x)
-	            dz = self.residual_z(self.sigmas_h[i], zp)
-	            Pxz += self.Wc[i] * outer(dx, dz)
+		        for i in xrange(self._num_sigmas):
+		            self.sigmas_f[i] = self.fx(sigmas[i], dt, *fx_args)
+		        
+		        self.x, self.P = UT(self.sigmas_f, self.Wm, self.Wc, self.Q, self.x_mean, self.residual_x)
+		        # print self.x
 
 
-	        self.K = dot(Pxz, inv(Pz))
-	        self.y = self.residual_z(z, zp)
+	        def unscented_transform(sigmas, Wm, Wc, noise_cov=None, mean_fn=None, residual_fn=None):
 
-	        self.x = self.x + dot(self.K, self.y)
-	        self.P = self.P - dot3(self.K, Pz, self.K.T)
-	```
+			    kmax, n = sigmas.shape
+
+			    x = mean_fn(sigmas, Wm)
+
+			    P = np.zeros((n,n))
+			    for k in xrange(kmax):
+			        y = residual_fn(sigmas[k], x)
+			        P += Wc[k] * np.outer(y, y)
+
+			    if noise_cov is not None:
+			        P += noise_cov
+
+			    return (x, P)
+	    ```
+
+	    * The `[update]` function first generates sigma points from expected measurement data
+	    * The measurement mean (zp) and covariance (Pz) is obtaine via unscented transform of the above generated sigma points
+	    * Next, the Kalman gain (K) and residual gain (y) is calculated 
+	    * Finally, the new mean (x) and covariance (P) is obtained, given K and y
+
+	    ```
+		    def update(self, z, R=None, UT=None, hx_args=()):
+
+		        if z is None:
+		            return
+
+		        if not isinstance(hx_args, tuple):
+		            hx_args = (hx_args,)
+
+		        if UT is None:
+		            UT = unscented_transform
+
+		        R = self.R
+
+		        for i in xrange(self._num_sigmas):
+		            self.sigmas_h[i] = self.hx(self.sigmas_f[i], *hx_args)
+
+		        zp, Pz = UT(self.sigmas_h, self.Wm, self.Wc, R, self.z_mean, self.residual_z)
+
+		        Pxz = zeros((self._dim_x, self._dim_z))
+		        for i in xrange(self._num_sigmas):
+		            dx = self.residual_x(self.sigmas_f[i], self.x)
+		            dz = self.residual_z(self.sigmas_h[i], zp)
+		            Pxz += self.Wc[i] * outer(dx, dz)
+
+
+		        self.K = dot(Pxz, inv(Pz))
+		        self.y = self.residual_z(z, zp)
+
+		        self.x = self.x + dot(self.K, self.y)
+		        self.P = self.P - dot3(self.K, Pz, self.K.T)
+		```
 
 	* The above functions from UKF class are imported in the main file `ukf_wheelchair.py` and implemented as follows -
 
-	```
-	kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
-				sqrt_fn=None, x_mean_fn=state_mean, z_mean_fn=meas_mean, 
-				residual_x, residual_z)
+		```
+		kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
+					sqrt_fn=None, x_mean_fn=state_mean, z_mean_fn=meas_mean, 
+					residual_x, residual_z)
 
-	x0 = np.array(self.ini_val)
+		x0 = np.array(self.ini_val)
 
-	kf.x = x0
-	kf.Q *= np.diag([.0001, .0001, .0001, .0001, .0001, .01, .01])
-	kf.P *= 0.000001
-	kf.R *= 0.0001
+		kf.x = x0
+		kf.Q *= np.diag([.0001, .0001, .0001, .0001, .0001, .01, .01])
+		kf.P *= 0.000001
+		kf.R *= 0.0001
 
-	move_time = 4.0
-	start = rospy.get_time()
+		move_time = 4.0
+		start = rospy.get_time()
 
-	while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():	
-		pub_twist.publish(wheel_cmd)
+		while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():	
+			pub_twist.publish(wheel_cmd)
 
-		z = np.array([odom_x, odom_y, odom_theta])
-		zs.append(z)
+			z = np.array([odom_x, odom_y, odom_theta])
+			zs.append(z)
 
-		kf.predict()
-		kf.update(z)
+			kf.predict()
+			kf.update(z)
 
-		xs.append(kf.x)
-	```
+			xs.append(kf.x)
+		```
 
 
 
