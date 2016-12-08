@@ -57,13 +57,11 @@
 
 ```
 
-def fx(x, dt):
-	
+def fx(x, dt):	
 	sol = self.ode2(x)
 	return np.array(sol)
 
 def hx(x):
-
 	return np.array([x[3], x[2], normalize_angle(x[4])])
 
 points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
@@ -82,8 +80,7 @@ kf.R *= 0.0001
 move_time = 4.0
 start = rospy.get_time()
 
-while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():
-	
+while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():	
 	pub_twist.publish(wheel_cmd)
 
 	z = np.array([odom_x, odom_y, odom_theta])
@@ -97,6 +94,5 @@ while (rospy.get_time() - start < move_time) and not rospy.is_shutdown():
 ```
 
 
-http://stackoverflow.com/questions/11256433/how-to-show-math-equations-in-general-githubs-markdownnot-githubs-blog
 
 
