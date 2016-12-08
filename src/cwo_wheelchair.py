@@ -3,7 +3,7 @@ import rospy
 from nuric_wheelchair_model_02.msg import FloatArray
 from geometry_msgs.msg import Twist
 import numpy as np
-from ukf_helper import al_to_th, rK2
+from ukf_helper import al_to_th, rK2, th_to_al, normalize_angle
 
 class CwoWheelchair:
 
@@ -15,16 +15,17 @@ class CwoWheelchair:
 
         self.wheel_cmd = Twist()
 
-        self.wheel_cmd.linear.x = -0.3
-        self.wheel_cmd.angular.z = 0.0
+        self.wheel_cmd.linear.x = -0.4
+        self.wheel_cmd.angular.z = 0.5
 
         # time to move wheelchair 
-        self.move_time = 4.0
+        self.move_time = 5.0
 
         self.rate = 50
         self.dt = 1./self.rate
 
         self.al_to_th = al_to_th
+        self.th_to_al = th_to_al
         self.rK2 = rK2
 
         self.l_caster_data = []
@@ -70,7 +71,7 @@ class CwoWheelchair:
         while rospy.get_time() == 0.0:
             continue
 
-        ini_val = [self.l_caster_angle, self.r_caster_angle]
+        self.ini_val = [self.th_to_al(self.l_caster_angle), self.th_to_al(self.r_caster_angle)]
 
         start = rospy.get_time()
         count=0
@@ -119,7 +120,10 @@ class CwoWheelchair:
         sol[:,0] = self.al_to_th(sol[:,0])
         sol[:,1] = self.al_to_th(sol[:,1])
 
-        np.savetxt('data_est_cwo.csv', sol)
+        x0 = [normalize_angle(item) for item in sol[:,0].tolist()]
+        x1 = [normalize_angle(item) for item in sol[:,1].tolist()]
+
+        np.savetxt('data_est_cwo.csv', np.c_[x0, x1])
 
     
 
@@ -134,11 +138,11 @@ class CwoWheelchair:
         a, b = x0.tolist()
 
         def fa(a, b):
-            return (self.wheel_cmd.angular.z*(self.dl*np.cos(a) - (self.df*np.sin(a)/2) - self.dc)/self.dc) - (self.wheel_cmd.linear.x*np.sin(a)/self.dc)
+            return (self.wheel_cmd.angular.z*(self.dl*np.cos(a) - (self.df*np.sin(a)/2) - self.dc)/self.dc) - (-self.wheel_cmd.linear.x*np.sin(a)/self.dc)
 
 
         def fb(a, b):
-            return (self.wheel_cmd.angular.z*(self.dl*np.cos(b) - (self.df*np.sin(b)/2) - self.dc)/self.dc) - (self.wheel_cmd.linear.x*np.sin(b)/self.dc)
+            return (self.wheel_cmd.angular.z*(self.dl*np.cos(b) - (self.df*np.sin(b)/2) - self.dc)/self.dc) - (-self.wheel_cmd.linear.x*np.sin(b)/self.dc)
 
 
         return np.array(self.rK2(a, b, fa, fb, dt))

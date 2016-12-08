@@ -122,10 +122,18 @@ class ModelWheelchair:
         np.savetxt('data_model.csv', np.c_[self.pose_x_data, self.pose_y_data, self.pose_th_data, self.l_caster_data, self.r_caster_data])
 
         sol = self.solve_est()
-        sol[:,2] = -sol[:,2]
         sol[:,5] = self.al_to_th(sol[:,5])
         sol[:,6] = self.al_to_th(sol[:,6])
-        np.savetxt('data_est_model.csv', sol)
+
+        x00 = [item for item in sol[:,0].tolist()]
+        x11 = [item for item in sol[:,1].tolist()]
+        x22 = [-item for item in sol[:,2].tolist()]
+        x33 = [item for item in sol[:,3].tolist()]
+        x44 = [normalize_angle(item) for item in sol[:,4].tolist()]
+        x55 = [normalize_angle(item) for item in sol[:,5].tolist()]
+        x66 = [normalize_angle(item) for item in sol[:,6].tolist()]
+
+        np.savetxt('data_est_model.csv', np.c_[x00,x11,x22,x33,x44,x55,x66])
 
 
     def ode2(self, x0, dt):
@@ -165,75 +173,6 @@ class ModelWheelchair:
         return np.array(self.rK7(a, b, c, d, e, f, g, fa, fb, fc, fd, fe, ff, fg, dt))
 
 
-    def rK7(self, a, b, c, d, e, f, g, fa, fb, fc, fd, fe, ff, fg, hs):
-
-        a1 = fa(a, b, c, d, e, f, g)*hs
-        b1 = fb(a, b, c, d, e, f, g)*hs
-        c1 = fc(a, b, c, d, e, f, g)*hs
-        d1 = fd(a, b, c, d, e, f, g)*hs
-        e1 = fe(a, b, c, d, e, f, g)*hs
-        f1 = ff(a, b, c, d, e, f, g)*hs
-        g1 = fg(a, b, c, d, e, f, g)*hs
-
-        ak = a + a1*0.5
-        bk = b + b1*0.5
-        ck = c + c1*0.5
-        dk = d + d1*0.5
-        ek = e + e1*0.5
-        fk = f + f1*0.5
-        gk = g + g1*0.5
-
-        a2 = fa(ak, bk, ck, dk, ek, fk, gk)*hs
-        b2 = fb(ak, bk, ck, dk, ek, fk, gk)*hs
-        c2 = fc(ak, bk, ck, dk, ek, fk, gk)*hs
-        d2 = fd(ak, bk, ck, dk, ek, fk, gk)*hs
-        e2 = fe(ak, bk, ck, dk, ek, fk, gk)*hs
-        f2 = ff(ak, bk, ck, dk, ek, fk, gk)*hs
-        g2 = fg(ak, bk, ck, dk, ek, fk, gk)*hs
-
-        ak = a + a2*0.5
-        bk = b + b2*0.5
-        ck = c + c2*0.5
-        dk = d + d2*0.5
-        ek = e + e2*0.5
-        fk = f + f2*0.5
-        gk = g + g2*0.5
-
-        a3 = fa(ak, bk, ck, dk, ek, fk, gk)*hs
-        b3 = fb(ak, bk, ck, dk, ek, fk, gk)*hs
-        c3 = fc(ak, bk, ck, dk, ek, fk, gk)*hs
-        d3 = fd(ak, bk, ck, dk, ek, fk, gk)*hs
-        e3 = fe(ak, bk, ck, dk, ek, fk, gk)*hs
-        f3 = ff(ak, bk, ck, dk, ek, fk, gk)*hs
-        g3 = fg(ak, bk, ck, dk, ek, fk, gk)*hs
-
-        ak = a + a3
-        bk = b + b3
-        ck = c + c3
-        dk = d + d3
-        ek = e + e3
-        fk = f + f3
-        gk = g + g3
-
-        a4 = fa(ak, bk, ck, dk, ek, fk, gk)*hs
-        b4 = fb(ak, bk, ck, dk, ek, fk, gk)*hs
-        c4 = fc(ak, bk, ck, dk, ek, fk, gk)*hs
-        d4 = fd(ak, bk, ck, dk, ek, fk, gk)*hs
-        e4 = fe(ak, bk, ck, dk, ek, fk, gk)*hs
-        f4 = ff(ak, bk, ck, dk, ek, fk, gk)*hs
-        g4 = fg(ak, bk, ck, dk, ek, fk, gk)*hs
-
-        a = a + (a1 + 2*(a2 + a3) + a4)/6
-        b = b + (b1 + 2*(b2 + b3) + b4)/6
-        c = c + (c1 + 2*(c2 + c3) + c4)/6
-        d = d + (d1 + 2*(d2 + d3) + d4)/6
-        e = e + (e1 + 2*(e2 + e3) + e4)/6
-        f = f + (f1 + 2*(f2 + f3) + f4)/6
-        g = g + (g1 + 2*(g2 + g3) + g4)/6
-
-        return [a, b, c, d, e, f, g]
-
-
     def omegas(self, delta1, delta2):
 
         N = self.m*self.g
@@ -252,9 +191,9 @@ class ModelWheelchair:
         Rr = 0.27*2
         s = 0.0
 
-        omega1 = (F3u*cos(delta1)) + (F3w*sin(delta1)) + F1u + F2u + (F4u*cos(delta2)) + (F4w*sin(delta2))
-        omega2 = F1w - (F3u*sin(delta1)) + (F3w*cos(delta1)) - (F4u*sin(delta2)) + (F4w*cos(delta2)) + F2w
-        omega3 = (F2u*(Rr/2.-s))-(F1u*(Rr/2.-s))-((F2w+F1w)*d)+((F4u*cos(delta2)+F4w*sin(delta2))*(Rr/2.-s))-((F3u*cos(delta1)-F3w*sin(delta1))*(Rr/2.+s))+((F4w*cos(delta2)-F4u*sin(delta2)+F3w*cos(delta1)-F3u*sin(delta1))*(L-d))
+        omega1 = (F3u*np.cos(delta1)) + (F3w*np.sin(delta1)) + F1u + F2u + (F4u*np.cos(delta2)) + (F4w*np.sin(delta2))
+        omega2 = F1w - (F3u*np.sin(delta1)) + (F3w*np.cos(delta1)) - (F4u*np.sin(delta2)) + (F4w*np.cos(delta2)) + F2w
+        omega3 = (F2u*(Rr/2.-s))-(F1u*(Rr/2.-s))-((F2w+F1w)*d)+((F4u*np.cos(delta2)+F4w*np.sin(delta2))*(Rr/2.-s))-((F3u*np.cos(delta1)-F3w*np.sin(delta1))*(Rr/2.+s))+((F4w*np.cos(delta2)-F4u*np.sin(delta2)+F3w*np.cos(delta1)-F3u*np.sin(delta1))*(L-d))
 
         return [omega1, omega2, omega3]
 

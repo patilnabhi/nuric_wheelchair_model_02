@@ -9,10 +9,10 @@ from tf.transformations import euler_from_quaternion
 import numpy as np
 
 
-class UKFWheelchair4(object):
+class UKFWheelchair(object):
 
     def __init__(self):
-        rospy.init_node('ukf_wheelchair4')
+        rospy.init_node('ukf_wheelchair')
         rospy.on_shutdown(self.shutdown)
 
         self.wheel_cmd = Twist()
@@ -22,7 +22,7 @@ class UKFWheelchair4(object):
 
 
         self.move_time = 6.0
-        self.rate = 100
+        self.rate = 50
         self.dt = 1.0/self.rate
 
         self.zs = []
@@ -245,9 +245,9 @@ class UKFWheelchair4(object):
         Rr = 0.27*2
         s = 0.0
 
-        omega1 = (F3u*cos(delta1)) + (F3w*sin(delta1)) + F1u + F2u + (F4u*cos(delta2)) + (F4w*sin(delta2))
-        omega2 = F1w - (F3u*sin(delta1)) + (F3w*cos(delta1)) - (F4u*sin(delta2)) + (F4w*cos(delta2)) + F2w
-        omega3 = (F2u*(Rr/2.-s))-(F1u*(Rr/2.-s))-((F2w+F1w)*d)+((F4u*cos(delta2)+F4w*sin(delta2))*(Rr/2.-s))-((F3u*cos(delta1)-F3w*sin(delta1))*(Rr/2.+s))+((F4w*cos(delta2)-F4u*sin(delta2)+F3w*cos(delta1)-F3u*sin(delta1))*(L-d))
+        omega1 = (F3u*np.cos(delta1)) + (F3w*np.sin(delta1)) + F1u + F2u + (F4u*np.cos(delta2)) + (F4w*np.sin(delta2))
+        omega2 = F1w - (F3u*np.sin(delta1)) + (F3w*np.cos(delta1)) - (F4u*np.sin(delta2)) + (F4w*np.cos(delta2)) + F2w
+        omega3 = (F2u*(Rr/2.-s))-(F1u*(Rr/2.-s))-((F2w+F1w)*d)+((F4u*np.cos(delta2)+F4w*np.sin(delta2))*(Rr/2.-s))-((F3u*np.cos(delta1)-F3w*np.sin(delta1))*(Rr/2.+s))+((F4w*np.cos(delta2)-F4u*np.sin(delta2)+F3w*np.cos(delta1)-F3u*np.sin(delta1))*(L-d))
 
         return [omega1, omega2, omega3]
 

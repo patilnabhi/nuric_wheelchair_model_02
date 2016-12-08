@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 def plot_model_data():
     
-    data = np.genfromtxt('/home/abhi/nuric_ws/src/nuric_wheelchair_model_02/src/data_model.csv', names=['x', 'y', 'th', 'l_caster', 'r_caster'])
-    dataEst = np.genfromtxt('/home/abhi/nuric_ws/src/nuric_wheelchair_model_02/src/data_est_model.csv', names=['x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6'])
+    data = np.genfromtxt('data_model.csv', names=['x', 'y', 'th', 'l_caster', 'r_caster'])
+    dataEst = np.genfromtxt('data_est_model.csv', names=['x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6'])
 
     line_width = 3.0
     alpha_value = 0.6

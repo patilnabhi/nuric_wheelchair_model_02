@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 
 def plot_ukf_data():
     
-    data = np.genfromtxt('/home/abhi/nuric_ws/src/nuric_wheelchair_model_02/src/data.csv', names=['x', 'y', 'th', 'l_caster', 'r_caster'])
-    dataEst = np.genfromtxt('/home/abhi/nuric_ws/src/nuric_wheelchair_model_02/src/data_est.csv', names=['x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6'])
-    dataUkf = np.genfromtxt('/home/abhi/nuric_ws/src/nuric_wheelchair_model_02/src/data_ukf.csv', names=['x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6'])
+    data = np.genfromtxt('data.csv', names=['x', 'y', 'th', 'l_caster', 'r_caster'])
+    dataEst = np.genfromtxt('data_est.csv', names=['x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6'])
+    dataUkf = np.genfromtxt('data_ukf.csv', names=['x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6'])
 
 
     line_width = 3.0

@@ -80,7 +80,7 @@ def rK2(a, b, fa, fb, hs):
     b1 = fb(a, b)*hs
 
     ak = a + a1*0.5
-    bk = b + b2*0.5
+    bk = b + b1*0.5
 
     a2 = fa(ak, bk)*hs
     b2 = fb(ak, bk)*hs
@@ -106,7 +106,7 @@ def rK2(a, b, fa, fb, hs):
 # hs = time-step
 # (http://www.codeproject.com/Tips/792927/Fourth-Order-Runge-Kutta-Method-in-Python)
 
-def rK7(self, a, b, c, d, e, f, g, fa, fb, fc, fd, fe, ff, fg, hs):
+def rK7(a, b, c, d, e, f, g, fa, fb, fc, fd, fe, ff, fg, hs):
 
     a1 = fa(a, b, c, d, e, f, g)*hs
     b1 = fb(a, b, c, d, e, f, g)*hs

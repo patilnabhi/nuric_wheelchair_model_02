@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 def plot_cwo_data():
     
-    data = np.genfromtxt('/home/abhi/nuric_ws/src/nuric_wheelchair_model_02/src/data_cwo.csv', names=['l_caster', 'r_caster'])
-    dataEst = np.genfromtxt('/home/abhi/nuric_ws/src/nuric_wheelchair_model_02/src/data_est_cwo.csv', names=['l_caster', 'r_caster'])
+    data = np.genfromtxt('data_cwo.csv', names=['l_caster', 'r_caster'])
+    dataEst = np.genfromtxt('data_est_cwo.csv', names=['l_caster', 'r_caster'])
 
 
     line_width = 3.0
