@@ -59,8 +59,8 @@
 	* The dynamic motion model is implemented using 4th-order Runge-Kutta method ([ode2], [rK7])
 	* Measurement data for this implementation comes from wheelchair's odometry - hence, the measurement function returns the 3rd, 4th and 5th elements representing x, y and theta (pose of wheelchair)
 
-	```
 
+	```
 	import numpy as np
 
 	def fx(x, dt):	
@@ -73,6 +73,7 @@
 	```
 
 	* Next, we create sigma points using the [Julier Scaled Sigma Point algorithm]. ([JulierSigmaPoints])
+
 
 	```
 	points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
