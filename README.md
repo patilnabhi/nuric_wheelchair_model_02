@@ -58,7 +58,7 @@
 	* Frist, we create a function to represent dynamic motion model `f(x)` and the measurement function `h(x)`
 	* The dynamic motion model is implemented using 4th-order Runge-Kutta method ([ode2], [rK7])
 	* Measurement data for this implementation comes from wheelchair's odometry - hence, the measurement function returns the 3rd, 4th and 5th elements representing x, y and theta (pose of wheelchair)
-
+<br>
 
 	```
 	import numpy as np
