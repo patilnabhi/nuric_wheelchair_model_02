@@ -18,7 +18,7 @@
 
 #####A. 3D model of new wheelchair
 
-* The relevant files are present in 2 main directories, namely  [`urdf`] and `[meshes]`
+* The relevant files are present in 2 main directories, namely  [`urdf`] and [`meshes`]
 
 * `urdf` : This directory contains the `xacro` files required to build the 3D model in simulation.
 * Main highlights -
@@ -79,7 +79,7 @@
 		points = JulierSigmaPoints(n=7, kappa=-4., sqrt_method=None)
 		```
 
-	* The `[UKF]` class incorporates the UKF algorithm as follows -
+	* The [`UKF`] class incorporates the UKF algorithm as follows -
 	
 
 		```
@@ -89,7 +89,7 @@
 		    				x_mean_fn=None, z_mean_fn=None, residual_z=None, residual_z=None):    
 		``` 
 
-	* `[predict]` function passes each of the sigma points through `fx` and calculate new set of sigma points
+	* [`predict`] function passes each of the sigma points through `fx` and calculate new set of sigma points
 	* The mean (x) and covariance (P) are obtained via unscented transform as shown below -
 
 		```
@@ -129,7 +129,7 @@
 			    return (x, P)
 	    ```
 
-	    * The `[update]` function first generates sigma points from expected measurement data
+	    * The [`update`] function first generates sigma points from expected measurement data
 	    * The measurement mean (zp) and covariance (Pz) is obtaine via unscented transform of the above generated sigma points
 	    * Next, the Kalman gain (K) and residual gain (y) is calculated 
 	    * Finally, the new mean (x) and covariance (P) is obtained, given K and y
@@ -167,7 +167,7 @@
 		        self.P = self.P - dot3(self.K, Pz, self.K.T)
 		```
 
-	* The above functions from UKF class are imported in the main file `[ukf_wheelchair.py]` and implemented as follows -
+	* The above functions from UKF class are imported in the main file [`ukf_wheelchair.py`] and implemented as follows -
 
 		```
 		kf = UKF(dim_x=7, dim_z=3, dt, fx, hx, points, 
@@ -204,14 +204,14 @@
 [assistive & rehabilitation robotics laboratory (argallab)]:http://argallab.smpp.northwestern.edu/
 [Rehabilitation Institute of Chicago (RIC)]:http://www.ric.org/
 [`urdf`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/urdf
-[meshes]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/meshes
-[3d_model_sw]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/3d_model_sw
+[`meshes`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/meshes
+[`3d_model_sw`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/3d_model_sw
 [Blender]:https://www.blender.org/
 [Julier’s Scaled Sigma Point]:http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=1025369
 [ode2]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_wheelchair.py#L192-L227
 [rK7]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_helper.py#L109-L175
 [JulierSigmaPoints]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_helper.py#L202-L332
-[UKF]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L10-L101
-[predict]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L53-L68
-[update]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L72-L101
-[ukf_wheelchair.py]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_wheelchair.py
+[`UKF`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L10-L101
+[`predict`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L53-L68
+[`update`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L72-L101
+[`ukf_wheelchair.py`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_wheelchair.py
