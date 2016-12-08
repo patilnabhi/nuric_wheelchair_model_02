@@ -4,6 +4,7 @@
 * Implement an Unscented Kalman Filter (UKF) algorithm for accurate estimation of Caster Wheel Orientations (CWOs) and pose of a [robotic wheelchair]
 * Mentor: [Prof. Brenna Argall]
 * Project is based in the [assistive & rehabilitation robotics laboratory (argallab)] located within the [Rehabilitation Institute of Chicago (RIC)]
+* Project website: 
 
 #### Project Objectives:
 
@@ -30,7 +31,7 @@
 * `meshes` directory contain the collada `.dae` files of the wheelchair
 
 * Raw SolidWorks files `.SLDPRT & .SLDASM` are available in the [`3d_model_sw`] directory
-	* [Blender] software is used to convert the `.SLDPRT & .SLDASM` files into collada `.dae` files for URDF compatibility
+	* [SimLab Composer] software is used to convert the `.SLDPRT & .SLDASM` files into collada `.dae` files for URDF compatibility
 
 
 #####B. UKF implementation for estimation of CWOs
@@ -206,7 +207,7 @@
 [`urdf`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/urdf
 [`meshes`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/meshes
 [`3d_model_sw`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/tree/master/3d_model_sw
-[Blender]:https://www.blender.org/
+[SimLab Composer]:http://www.simlab-soft.com/3d-products/simlab-composer-main.aspx
 [Julier’s Scaled Sigma Point]:http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=1025369
 [ode2]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_wheelchair.py#L192-L227
 [rK7]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_helper.py#L109-L175
