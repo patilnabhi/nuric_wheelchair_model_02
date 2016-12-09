@@ -2,7 +2,7 @@
 
 #### Goal:
 * Implement an Unscented Kalman Filter (UKF) algorithm for accurate estimation of Caster Wheel Orientations (CWOs) and pose of a [robotic wheelchair]
-* Mentor: [Prof. Brenna Argall]
+* Project advisors: [Prof. Brenna Argall], [Dr. Jarvis Schultz]
 * Project is based in the [assistive & rehabilitation robotics laboratory (argallab)] located within the [Rehabilitation Institute of Chicago (RIC)]
 * Project website: http://abhipatil.me/portfolio/smart-wheelchair
 
@@ -242,3 +242,4 @@
 [`update`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L72-L101
 [`ukf_wheelchair.py`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_wheelchair.py
 [MeshLab]:http://meshlab.sourceforge.net/
+[Dr. Jarvis Schultz]:http://nxr.northwestern.edu/people/jarvis-schultz
