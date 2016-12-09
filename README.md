@@ -19,6 +19,8 @@
 
 #####A. 3D model of new wheelchair
 
+![3D model](http://abhipatil.me/wp-content/uploads/2016/12/wheelchair_01-420x488.png)
+
 * The relevant files are present in 2 main directories, namely  [`urdf`] and [`meshes`]
 
 * `urdf` : This directory contains the `xacro` files required to build the 3D model in simulation.
