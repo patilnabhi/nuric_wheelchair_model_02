@@ -203,6 +203,25 @@
 		```
 
 
+References:
+
+1. [Kalman and Bayesian Filters in Python](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=3&cad=rja&uact=8&ved=0ahUKEwjGrb6QsObQAhVHw2MKHdvLBsMQFggmMAI&url=http%3A%2F%2Frobotics.itee.uq.edu.au%2F~elec3004%2Ftutes%2FKalman_and_Bayesian_Filters_in_Python.pdf&usg=AFQjCNEOmFJeO0npgom8AT2vrbTJgrvDaA)
+
+2. Analysis of Driving Backward in an Electric-Powered Wheelchair, *Dan Ding, Rory A. Cooper, Songfeng Guo and Thomas A. Corfman (2004)*
+
+3. A New Dynamic Model of theWheelchair Propulsion on Straight and Curvilinear Level-ground Paths, *Felix Chenier, Pascal Bigras, Rachid Aissaoui (2014)*
+
+4. A Caster Wheel Controller For Differential Drive Wheelchairs, *Bernd Gersdorf, Shi Hui*
+
+5. Kinematic Modeling of Mobile Robots by Transfer Method of Augmented Generalized Coordinates,
+*Wheekuk Kim, Byung-Ju Yi, Dong Jin Lim (2004)*
+
+6. [Mobile Robot Kinematics](http://www.cs.cmu.edu/~rasc/Download/AMRobots3.pdf)
+
+7. Dynamics equations of a mobile robot provided with caster wheel, *Stefan Staicu (2009)*
+
+
+
 
 
 [robotic wheelchair]:http://argallab.smpp.northwestern.edu/index.php/research/robot-platforms/smart-wheelchair/
