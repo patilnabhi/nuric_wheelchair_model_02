@@ -34,7 +34,7 @@
 
 * Raw SolidWorks files `.SLDPRT & .SLDASM` are available in the [`3d_model_sw`] directory
 	* [SimLab Composer] software is used to convert the `.SLDPRT & .SLDASM` files into collada `.dae` files for URDF compatibility
-	* [MeshLab] software is used to determine the moments of inertia and centre of gravity parameters of the wheelchair
+	* [MeshLab] software is used to determine the moments of inertia and center of gravity parameters of the wheelchair
 
 
 #####B. UKF implementation for estimation of CWOs
@@ -137,7 +137,7 @@
 	    ```
 
 	    * The [`update`] function first generates sigma points from expected measurement data
-	    * The measurement mean (zp) and covariance (Pz) is obtaine via unscented transform of the above generated sigma points
+	    * The measurement mean (zp) and covariance (Pz) is obtained via unscented transform of the above generated sigma points
 	    * Next, the Kalman gain (K) and residual gain (y) is calculated 
 	    * Finally, the new mean (x) and covariance (P) is obtained, given K and y
 
@@ -210,7 +210,7 @@
 
 2. Analysis of Driving Backward in an Electric-Powered Wheelchair, *Dan Ding, Rory A. Cooper, Songfeng Guo and Thomas A. Corfman (2004)*
 
-3. A New Dynamic Model of theWheelchair Propulsion on Straight and Curvilinear Level-ground Paths, *Felix Chenier, Pascal Bigras, Rachid Aissaoui (2014)*
+3. A New Dynamic Model of the Wheelchair Propulsion on Straight and Curvilinear Level-ground Paths, *Felix Chenier, Pascal Bigras, Rachid Aissaoui (2014)*
 
 4. A Caster Wheel Controller For Differential Drive Wheelchairs, *Bernd Gersdorf, Shi Hui*
 
