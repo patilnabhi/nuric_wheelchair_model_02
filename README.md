@@ -34,6 +34,7 @@
 
 * Raw SolidWorks files `.SLDPRT & .SLDASM` are available in the [`3d_model_sw`] directory
 	* [SimLab Composer] software is used to convert the `.SLDPRT & .SLDASM` files into collada `.dae` files for URDF compatibility
+	* [MeshLab] software is used to determine the moments of inertia and centre of gravity parameters of the wheelchair
 
 
 #####B. UKF implementation for estimation of CWOs
@@ -240,3 +241,4 @@
 [`predict`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L53-L68
 [`update`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf.py#L72-L101
 [`ukf_wheelchair.py`]:https://github.com/patilnabhi/nuric_wheelchair_model_02/blob/master/src/ukf_wheelchair.py
+[MeshLab]:http://meshlab.sourceforge.net/
