@@ -34,7 +34,7 @@ class UKFWheelchair(object):
         self.meas_mean = meas_mean
         self.residual_x = residual_x
         self.residual_z = residual_z
-        self.rK7 = rK7
+        self.rK7 = rK7  # Runge-kutta method to solve ode with 7 variables
 
         # constants for ode equations
         # (approximations)
@@ -158,7 +158,7 @@ class UKFWheelchair(object):
         return sol
 
 
-
+    # saving data to csv files
     def save_data(self):
 
         rospy.loginfo("Saving data...")
@@ -227,7 +227,9 @@ class UKFWheelchair(object):
         return np.array(self.rK7(a, b, c, d, e, f, g, fa, fb, fc, fd, fe, ff, fg, self.dt))
 
 
-    def omegas(self, delta1, delta2):
+    
+    # calculating omegas from the dynamic motion model
+    ef omegas(self, delta1, delta2):
 
         N = self.m*self.g
 

@@ -7,6 +7,8 @@ import numpy as np
 from tf.transformations import euler_from_quaternion
 from ukf_helper import normalize_angle, al_to_th, th_to_al, rK7
 
+# Code to test dynamic model of the wheelchair
+
 class ModelWheelchair:
 
     def __init__(self):
@@ -14,8 +16,7 @@ class ModelWheelchair:
 
         rospy.on_shutdown(self.shutdown)
         self.wheel_cmd = Twist()
-
-        self.wheel_cmd.linear.x = -0.3 # Driving back w/o turn and a non-zero caster orientation
+        self.wheel_cmd.linear.x = -0.3 
         self.wheel_cmd.angular.z = 0.2
 
         self.move_time = 6.0
@@ -28,10 +29,11 @@ class ModelWheelchair:
         self.l_caster_data = []
         self.r_caster_data = []
 
-        self.normalize_angle = normalize_angle
-        self.al_to_th = al_to_th
-        self.th_to_al = th_to_al
-        self.rK7 = rK7
+
+        self.normalize_angle = normalize_angle  # function to keep angle within [-pi, pi]
+        self.al_to_th = al_to_th  # convert from alpha (kinematic model) to odometry's theta
+        self.th_to_al = th_to_al  # convert from theta to alpha (kinematic model)
+        self.rK7 = rK7  # Runge-Kutta solver for 7 variables
 
         # constants for ode equations
         # (approximations)
@@ -75,7 +77,9 @@ class ModelWheelchair:
         start = rospy.get_time()
 
         rospy.sleep(1)
-        
+
+
+        # set initial values for solving dynamic model
         self.ini_val = [self.wheel_cmd.angular.z, -self.wheel_cmd.linear.x, -self.pose_y, self.pose_x, self.pose_th, self.th_to_al(self.l_caster_angle), self.th_to_al(self.r_caster_angle)]
 
         count = 0
@@ -118,7 +122,10 @@ class ModelWheelchair:
 
         return sol
 
+    # saving data to csv files
     def save_data(self):
+        
+
         np.savetxt('data_model.csv', np.c_[self.pose_x_data, self.pose_y_data, self.pose_th_data, self.l_caster_data, self.r_caster_data])
 
         sol = self.solve_est()
@@ -136,6 +143,8 @@ class ModelWheelchair:
         np.savetxt('data_est_model.csv', np.c_[x00,x11,x22,x33,x44,x55,x66])
 
 
+
+    # ode solver incorporating Runge-kutta method (rK7)
     def ode2(self, x0, dt):
 
         self.dl = self.wh_consts[0]
@@ -173,6 +182,7 @@ class ModelWheelchair:
         return np.array(self.rK7(a, b, c, d, e, f, g, fa, fb, fc, fd, fe, ff, fg, dt))
 
 
+    # calculating omegas in the dynamic motion model
     def omegas(self, delta1, delta2):
 
         N = self.m*self.g

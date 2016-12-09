@@ -6,22 +6,24 @@ from scipy.linalg import inv, cholesky, sqrtm
 from ut import unscented_transform
 from ukf_helper import dot3
 
+# UKF algorithm implementation
+
 
 class UKF(object):
 
     def __init__(self, dim_x, dim_z, dt, hx, fx, points, sqrt_fn=None, x_mean_fn=None, z_mean_fn=None, residual_x=None, residual_z=None):
 
-        self.Q = eye(dim_x)
-        self.R = eye(dim_z)
-        self.x = zeros(dim_x)
-        self.P = eye(dim_x)
+        self.Q = eye(dim_x)     # motion model noise Q
+        self.R = eye(dim_z)     # measurement noise matrix
+        self.x = zeros(dim_x)   # mean values of state
+        self.P = eye(dim_x)     # state / motion model noise matrix
         self._dim_x = dim_x
         self._dim_z = dim_z
         self.points_fn = points
         self._dt = dt
         self._num_sigmas = points.num_sigmas()
-        self.hx = hx
-        self.fx = fx
+        self.hx = hx        # measurement function
+        self.fx = fx        # motion model function
         self.x_mean = x_mean_fn
         self.z_mean = z_mean_fn
         self.log_likelihood = 0.0

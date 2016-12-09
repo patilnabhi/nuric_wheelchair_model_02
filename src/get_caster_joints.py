@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import rospy
-import sys
+import numpy as np 
 from sensor_msgs.msg import JointState
 from nuric_wheelchair_model_02.msg import FloatArray
-
-from math import atan2, sin, cos
 
 class GetCasterJoints:
 
@@ -13,11 +11,6 @@ class GetCasterJoints:
 
         # Set rospy to execute a shutdown function when exiting       
         rospy.on_shutdown(self.shutdown)
-
-        self.caster_joints = FloatArray()
-
-        self.pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348
-        self.two_pi = 2.*self.pi
 
         #Setup subscriber
         self.joints = rospy.Subscriber('/joint_states', JointState, self.joints_callback)
@@ -31,16 +24,16 @@ class GetCasterJoints:
             r.sleep()
 
     def joints_callback(self, joints):
-        # self.caster_joints = [atan2(sin(joints.position[0]), cos(joints.position[0])), atan2(sin(joints.position[1]), cos(joints.position[1]))]
+
         self.caster_joints = [self.angle_adj(joints.position[0]), self.angle_adj(joints.position[1])]
         # print self.caster_joints
 
     def angle_adj(self, angle):
-        angle = angle%self.two_pi
-        angle = (angle+self.two_pi)%(self.two_pi)
+        angle = angle%2*np.pi
+        angle = (angle+2*np.pi)%(2*np.pi)
 
-        if angle > self.pi:
-            angle -= self.two_pi
+        if angle > np.pi:
+            angle -= 2*np.pi
         return angle
 
     def pub(self):

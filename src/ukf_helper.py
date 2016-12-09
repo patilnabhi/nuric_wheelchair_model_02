@@ -21,7 +21,7 @@ def al_to_th(al):
 def th_to_al(th):
     return th-np.pi
 
-
+# calculating mean to be used in unscented transform (ut.py)
 def state_mean(sigmas, Wm):
     x = np.zeros(7)
 
@@ -42,6 +42,7 @@ def state_mean(sigmas, Wm):
 
     return x
 
+# calculating mean to be used in unscented transform (ut.py)
 def meas_mean(sigmas, Wm):
     z = np.zeros(3)
 
@@ -55,6 +56,7 @@ def meas_mean(sigmas, Wm):
 
     return z
 
+# calculating the residual gain values (motion model)
 def residual_x(a, b):
     y = a - b
 
@@ -62,6 +64,7 @@ def residual_x(a, b):
 
     return y 
 
+# calculating the residual gain values (meas model)
 def residual_z(a, b):
     y = a - b
 
@@ -199,6 +202,8 @@ def rKN(x, fx, n, hs):
         x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])/6
     return x
 
+
+# Scaled Sigma Point algorithm by Julier
 class JulierSigmaPoints(object):
 
     def __init__(self,n,  kappa, sqrt_method=None, subtract=None):

@@ -8,6 +8,7 @@ from ukf_helper import al_to_th, rK2, th_to_al, normalize_angle
 class CwoWheelchair:
 
     def __init__(self):
+        # Initialize node
         rospy.init_node('cwo_wheelchair')
 
         # Set rospy to execute a shutdown function when exiting       
@@ -15,6 +16,7 @@ class CwoWheelchair:
 
         self.wheel_cmd = Twist()
 
+        # Control commands for wheelchair
         self.wheel_cmd.linear.x = -0.4
         self.wheel_cmd.angular.z = 0.5
 
@@ -71,6 +73,7 @@ class CwoWheelchair:
         while rospy.get_time() == 0.0:
             continue
 
+        # set initial values for the kinematic model
         self.ini_val = [self.th_to_al(self.l_caster_angle), self.th_to_al(self.r_caster_angle)]
 
         start = rospy.get_time()
@@ -79,6 +82,7 @@ class CwoWheelchair:
         rospy.loginfo("Moving robot...")
         while (rospy.get_time() - start < self.move_time) and not rospy.is_shutdown():
 
+            # save data for plotting
             self.l_caster_data.append(self.l_caster_angle)
             self.r_caster_data.append(self.r_caster_angle)
             self.pub_twist.publish(self.wheel_cmd)   
@@ -94,6 +98,7 @@ class CwoWheelchair:
         rospy.sleep(1)
 
 
+    # solve kinematic model using ode2 function
     def solve_est(self):
 
         count=0
@@ -112,6 +117,7 @@ class CwoWheelchair:
 
         return sol
 
+    # save data to csv files 
     def save_data(self):
 
         np.savetxt('data_cwo.csv', np.c_[self.l_caster_data, self.r_caster_data])
@@ -126,7 +132,7 @@ class CwoWheelchair:
         np.savetxt('data_est_cwo.csv', np.c_[x0, x1])
 
     
-
+    # function to solve ODE (kinematic model for CWOs estimation)
     def ode2(self, x0, dt):
 
         self.dl = self.wh_consts[0]
